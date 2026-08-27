@@ -1,0 +1,12 @@
+fastapi==0.115.12
+httpx==0.28.1
+kiteconnect==5.2.0
+numpy==2.4.6
+pandas==3.0.3
+pydantic==2.11.5
+python-dotenv==1.2.2
+python-multipart==0.0.20
+uvicorn[standard]==0.48.0
+bcrypt==4.3.0
+PyJWT==2.10.1
+motor==3.7.0
