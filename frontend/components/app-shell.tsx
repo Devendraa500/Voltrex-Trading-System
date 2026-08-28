@@ -84,7 +84,7 @@ function ThemeToggle({ isLight, onToggle }: { isLight: boolean; onToggle: (e: Re
 }
 
 const NAV_ITEMS = [
-  { id: "terminal",  href: "/",          icon: <Gauge />,            label: "Terminal"  },
+  { id: "terminal",  href: "/terminal",  icon: <Gauge />,            label: "Terminal"  },
   { id: "scanner",   href: "/scanner",   icon: <Activity />,         label: "Scanner"   },
   { id: "watchlist", href: "/watchlist", icon: <BookOpen />,         label: "Watchlist" },
   { id: "alerts",    href: "/alerts",    icon: <Bell />,             label: "Alerts"    },
