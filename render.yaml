@@ -10,16 +10,10 @@ services:
       - key: VOLTREX_ENV
         value: production
       - key: VOLTREX_CORS_ORIGINS
-        value: http://localhost:3000
+        value: "*"
       - key: PYTHON_VERSION
         value: 3.12.3
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
-        sync: false
-      - key: ZERODHA_API_KEY
-        sync: false
-      - key: ZERODHA_ACCESS_TOKEN
-        sync: false
-      - key: ZERODHA_API_SECRET
         sync: false
