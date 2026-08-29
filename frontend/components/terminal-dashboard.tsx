@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CsvChart } from "@/components/csv-chart";
 import { Button, Panel, PanelHeader } from "@/components/ui";
+import { MeshGradientSVG } from "@/components/ui/shader-svg";
 import { demoScan, demoCandles } from "@/lib/api";
 import type { Candle, ScanResult, ScanRun } from "@/lib/types";
 import { cn, formatInr } from "@/lib/utils";
@@ -114,18 +115,23 @@ export function TerminalDashboard({ query, setQuery, onBrokerReady }: TerminalDa
       <div className="workspace-inner">
         {/* ── Hero ─────────────────────────────────────────────────── */}
         <section className="hero-strip">
-          <div>
+          <div className="hero-left-content">
             <p className="eyebrow">VOLTREX EQUILIBRIUM ENGINE</p>
             <h1>Institutional market structure, resolved.</h1>
             <p className="hero-copy">
               Deterministic execution levels, regime intelligence, and
               advanced scanning for NSE equities.
             </p>
+            <div className="hero-actions-row">
+              <Button onClick={() => void load(true)} disabled={refreshing}>
+                {refreshing ? <LoaderCircle className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+                {refreshing ? "Refreshing…" : "Refresh analysis"}
+              </Button>
+            </div>
           </div>
-          <Button onClick={() => void load(true)} disabled={refreshing}>
-            {refreshing ? <LoaderCircle className="animate-spin" size={16} /> : <RefreshCw size={16} />}
-            {refreshing ? "Refreshing…" : "Refresh analysis"}
-          </Button>
+          <div className="hero-mascot-container">
+            <MeshGradientSVG />
+          </div>
         </section>
 
         {error && (

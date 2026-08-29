@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Lenis from "lenis";
 import * as d3 from "d3";
+import { ParticleWave } from "@/components/particle-wave";
 
 export function LandingPage() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export function LandingPage() {
   const requestAccessMountRef = useRef<HTMLSpanElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const subRef = useRef<HTMLParagraphElement>(null);
-  const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const waitlistFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     // ── 1. Lenis Smooth Scroll ───────────────────────────────────────
@@ -27,32 +27,32 @@ export function LandingPage() {
     }
     lenisRafId = requestAnimationFrame(raf);
 
-    // ── 2. Word-by-word animation ────────────────────────────────────
+    // ── 2. Word-by-word split & reveal ───────────────────────────────
+    function splitWords(el: HTMLElement | null) {
+      if (!el) return [];
+      const text = el.textContent || "";
+      const words = text.split(" ");
+      el.innerHTML = words
+        .map((w, i) => `<span class="word">${w}</span>${i < words.length - 1 ? " " : ""}`)
+        .join("");
+      return Array.from(el.querySelectorAll<HTMLElement>(".word"));
+    }
+
+    const headingWords = splitWords(headingRef.current);
+    const subWords = splitWords(subRef.current);
+
     function easeOutCubic(t: number) {
       return 1 - Math.pow(1 - t, 3);
     }
 
-    function splitAndAnimateWords(
-      el: HTMLElement | null,
+    function animateWords(
+      words: HTMLElement[],
       baseDelay: number,
       stagger: number,
       duration: number,
       fromY: number
     ) {
-      if (!el) return;
-      const text = el.textContent || "";
-      const words = text.split(" ");
-      el.innerHTML = words
-        .map(
-          (w, i) =>
-            `<span class="landing-word">${w}</span>${
-              i < words.length - 1 ? " " : ""
-            }`
-        )
-        .join("");
-      const wordEls = el.querySelectorAll<HTMLElement>(".landing-word");
-
-      wordEls.forEach((word, i) => {
+      words.forEach((word, i) => {
         const delay = baseDelay + i * stagger;
         setTimeout(() => {
           const start = performance.now();
@@ -70,17 +70,24 @@ export function LandingPage() {
 
     function reveal(id: string, delay: number) {
       setTimeout(() => {
-        const target = document.getElementById(id);
-        if (target) target.classList.add("revealed");
+        const el = document.getElementById(id);
+        if (el) el.classList.add("revealed");
       }, delay);
     }
 
-    reveal("landing-nav", 150);
-    reveal("landing-badge", 320);
-    splitAndAnimateWords(headingRef.current, 480, 85, 720, 26);
-    splitAndAnimateWords(subRef.current, 1150, 22, 600, 14);
-    reveal("landing-formWrap", 1450);
-    reveal("landing-footer", 1650);
+    reveal("nav", 150);
+    reveal("badge", 320);
+    animateWords(headingWords, 480, 85, 720, 26);
+    animateWords(subWords, 1150, 22, 600, 14);
+    reveal("formWrap", 1450);
+    reveal("footer", 1650);
+
+    const formEl = waitlistFormRef.current;
+    const handleFormSubmit = (e: Event) => {
+      e.preventDefault();
+      router.push("/terminal");
+    };
+    if (formEl) formEl.addEventListener("submit", handleFormSubmit);
 
     // ── 3. Liquid Metal Buttons Mount ────────────────────────────────
     let navCleanup: (() => void) | undefined;
@@ -101,26 +108,27 @@ export function LandingPage() {
         label: "Request Access",
         type: "submit",
         onClick: () => {
-          setEmailSubmitted(true);
+          router.push("/terminal");
         },
       })?.destroy;
     }
 
-    // ── 4. WebGL Fluid Simulation ────────────────────────────────────
+    // ── 4. Fluid simulation engine (verbatim per spec) ────────────────
     let fluidCleanup: (() => void) | undefined;
     if (fluidCanvasRef.current) {
-      fluidCleanup = initFluidSimulation(fluidCanvasRef.current);
+      fluidCleanup = fluidSimulation(fluidCanvasRef.current);
     }
 
-    // ── 5. D3 Rotating Earth ─────────────────────────────────────────
+    // ── 5. Rotating Earth (verbatim per spec) ─────────────────────────
     let earthCleanup: (() => void) | undefined;
     if (earthCanvasRef.current && earthPanelRef.current) {
-      earthCleanup = initRotatingEarth(earthCanvasRef.current, earthPanelRef.current);
+      earthCleanup = initRotatingEarth(earthPanelRef.current, earthCanvasRef.current);
     }
 
     return () => {
       cancelAnimationFrame(lenisRafId);
       lenis.destroy();
+      if (formEl) formEl.removeEventListener("submit", handleFormSubmit);
       navCleanup?.();
       reqCleanup?.();
       fluidCleanup?.();
@@ -129,13 +137,14 @@ export function LandingPage() {
   }, [router]);
 
   return (
-    <div className="landing-root">
-      <section className="landing-hero">
+    <div className="landing-page-body">
+      <section className="hero">
+        <ParticleWave />
         <canvas ref={fluidCanvasRef} className="fluid-canvas" aria-hidden="true" />
-        <div className="landing-scrim" aria-hidden="true" />
+        <div className="scrim" aria-hidden="true" />
 
-        <header className="landing-nav" id="landing-nav">
-          <Link className="landing-brand" href="/">
+        <header className="nav" id="nav">
+          <a className="brand" href="/">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
                 d="M2.5 9c2.5 0 2.5 4.2 5 4.2S10 9 12 9s2.5 4.2 5 4.2S19.5 9 21.5 9"
@@ -152,72 +161,55 @@ export function LandingPage() {
               />
             </svg>
             <span>Voltrex</span>
-          </Link>
+          </a>
 
-          <nav className="landing-nav-pill">
-            <Link href="/terminal">Equilibrium Engine</Link>
-            <Link href="/scanner">Scanner</Link>
-            <Link href="/watchlist">Watchlist</Link>
-            <Link href="/portfolio">Portfolio</Link>
+          <nav className="nav-pill">
+            <a href="/terminal">Equilibrium Engine</a>
+            <a href="/scanner">Scanner</a>
+            <a href="/terminal">Architecture</a>
+            <a href="/terminal">API</a>
           </nav>
 
-          <span ref={navCtaMountRef} className="liquid-btn-mount" />
+          <span ref={navCtaMountRef} id="navCtaMount" className="liquid-btn-mount" />
         </header>
 
-        <div className="landing-earth-panel" id="earthPanel" ref={earthPanelRef}>
+        <div className="earth-panel" id="earthPanel" ref={earthPanelRef}>
           <canvas ref={earthCanvasRef} id="earthCanvas" />
         </div>
 
-        <div className="landing-center-col">
-          <p className="landing-badge" id="landing-badge">
+        <div className="center-col">
+          <p className="badge" id="badge">
             NSE Equities · Square-Root Harmonic Engine
           </p>
 
-          <h1 className="landing-heading" id="landing-heading" ref={headingRef}>
+          <h1 className="heading" id="heading" ref={headingRef}>
             Institutional Market Structure, Resolved
           </h1>
 
-          <p className="landing-sub" id="landing-sub" ref={subRef}>
+          <p className="sub" id="sub" ref={subRef}>
             Voltrex deterministically maps liquidity zones, True Value equilibrium,
             QR/QS levels, and ranked opportunities across Indian equities.
           </p>
 
-          <div className="landing-form-wrap" id="landing-formWrap">
-            {emailSubmitted ? (
-              <div className="landing-success-message">
-                <span className="status-dot online" style={{ display: "inline-block", marginRight: 8 }} />
-                <span>Access request received! Welcome to Voltrex.</span>
-                <button
-                  type="button"
-                  className="landing-launch-link"
-                  onClick={() => router.push("/terminal")}
-                >
-                  Enter Terminal →
-                </button>
+          <div className="form-wrap" id="formWrap">
+            <form className="waitlist" id="waitlistForm" ref={waitlistFormRef}>
+              <div className="glass-bar">
+                <input
+                  type="email"
+                  required
+                  placeholder="Get early access to the terminal"
+                />
+                <span
+                  ref={requestAccessMountRef}
+                  id="requestAccessMount"
+                  className="liquid-btn-mount"
+                />
               </div>
-            ) : (
-              <form
-                className="landing-waitlist"
-                id="waitlistForm"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setEmailSubmitted(true);
-                }}
-              >
-                <div className="landing-glass-bar">
-                  <input
-                    type="email"
-                    required
-                    placeholder="Get early access to the terminal"
-                  />
-                  <span ref={requestAccessMountRef} className="liquid-btn-mount" />
-                </div>
-              </form>
-            )}
+            </form>
           </div>
         </div>
 
-        <footer className="landing-site-footer" id="landing-footer">
+        <footer className="site-footer" id="footer">
           © 2026 Voltrex Trading System — engineered for quantitative equities analysis.
         </footer>
       </section>
@@ -225,7 +217,7 @@ export function LandingPage() {
   );
 }
 
-// ── Native WebGL Liquid Metal Button Builder ─────────────────────────────────
+// ── Liquid Metal Button Builder ──────────────────────────────────────────────
 function measureLabelWidth(label: string) {
   if (typeof document === "undefined") return 120;
   const span = document.createElement("span");
@@ -234,7 +226,7 @@ function measureLabelWidth(label: string) {
   span.style.whiteSpace = "nowrap";
   span.style.fontSize = "14px";
   span.style.fontFamily = '"Onest", sans-serif';
-  span.style.fontWeight = "500";
+  span.style.fontWeight = "400";
   span.textContent = label;
   document.body.appendChild(span);
   const w = span.getBoundingClientRect().width;
@@ -248,21 +240,21 @@ function mountLiquidMetalButton(
     label,
     type = "button",
     onClick,
-  }: { label: string; type?: "button" | "submit"; onClick?: () => void }
+  }: { label: string; type?: "button" | "submit"; onClick?: (e: Event) => void }
 ) {
   if (!mountEl) return;
   mountEl.innerHTML = "";
 
   const textWidth = measureLabelWidth(label);
-  const width = Math.max(128, Math.ceil(textWidth) + 54);
-  const height = 44;
+  const width = Math.max(120, Math.ceil(textWidth) + 56);
+  const height = 46;
   const innerWidth = width - 4;
   const innerHeight = height - 4;
 
   let isHovered = false;
   let isPressed = false;
   let rippleId = 0;
-  let animationId = 0;
+  let animId = 0;
 
   const wrap = document.createElement("div");
   wrap.style.position = "relative";
@@ -278,9 +270,11 @@ function mountLiquidMetalButton(
     width: `${width}px`,
     height: `${height}px`,
     transformStyle: "preserve-3d",
-    transition: "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease",
+    transform: "none",
   });
 
+  // Label layer
   const labelLayer = document.createElement("div");
   Object.assign(labelLayer.style, {
     position: "absolute",
@@ -293,6 +287,7 @@ function mountLiquidMetalButton(
     justifyContent: "center",
     gap: "6px",
     transformStyle: "preserve-3d",
+    transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease, gap 0.4s ease",
     transform: "translateZ(20px)",
     zIndex: "30",
     pointerEvents: "none",
@@ -300,15 +295,17 @@ function mountLiquidMetalButton(
   const labelSpan = document.createElement("span");
   Object.assign(labelSpan.style, {
     fontSize: "14px",
-    color: "#ffffff",
-    fontWeight: "500",
-    textShadow: "0px 1px 3px rgba(0, 0, 0, 0.7)",
+    color: "#eef0f6",
+    fontWeight: "400",
+    textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)",
+    transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    transform: "scale(1)",
     whiteSpace: "nowrap",
-    letterSpacing: "-0.01em",
   });
   labelSpan.textContent = label;
   labelLayer.appendChild(labelSpan);
 
+  // Inner dark base layer
   const baseLayer = document.createElement("div");
   Object.assign(baseLayer.style, {
     position: "absolute",
@@ -317,9 +314,9 @@ function mountLiquidMetalButton(
     width: `${width}px`,
     height: `${height}px`,
     transformStyle: "preserve-3d",
-    transform: "translateZ(10px)",
+    transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease",
+    transform: "translateZ(10px) translateY(0) scale(1)",
     zIndex: "20",
-    pointerEvents: "none",
   });
   const baseInner = document.createElement("div");
   Object.assign(baseInner.style, {
@@ -327,12 +324,13 @@ function mountLiquidMetalButton(
     height: `${innerHeight}px`,
     margin: "2px",
     borderRadius: "100px",
-    background: "linear-gradient(180deg, rgba(16, 22, 34, 0.85) 0%, rgba(4, 6, 12, 0.95) 100%)",
-    boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.15)",
-    transition: "all 0.4s ease",
+    background: "linear-gradient(180deg, #202020 0%, #000000 100%)",
+    boxShadow: "none",
+    transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease, box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
   });
   baseLayer.appendChild(baseInner);
 
+  // Shader layer
   const shaderOuter = document.createElement("div");
   Object.assign(shaderOuter.style, {
     position: "absolute",
@@ -341,7 +339,8 @@ function mountLiquidMetalButton(
     width: `${width}px`,
     height: `${height}px`,
     transformStyle: "preserve-3d",
-    transform: "translateZ(0px)",
+    transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease",
+    transform: "translateZ(0px) translateY(0) scale(1)",
     zIndex: "10",
   });
   const shadowWrap = document.createElement("div");
@@ -349,26 +348,41 @@ function mountLiquidMetalButton(
     height: `${height}px`,
     width: `${width}px`,
     borderRadius: "100px",
-    boxShadow: "0px 0px 0px 1px rgba(82, 228, 184, 0.35), 0px 12px 24px rgba(0, 0, 0, 0.5)",
-    background: "transparent",
+    boxShadow:
+      "0px 0px 0px 1px rgba(0, 0, 0, 0.3), 0px 36px 14px 0px rgba(0, 0, 0, 0.02), 0px 20px 12px 0px rgba(0, 0, 0, 0.08), 0px 9px 9px 0px rgba(0, 0, 0, 0.12), 0px 2px 5px 0px rgba(0, 0, 0, 0.15)",
+    transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease, box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+    background: "rgb(0 0 0 / 0)",
+  });
+  const shaderContainer = document.createElement("div");
+  shaderContainer.className = "shader-container-exploded";
+  Object.assign(shaderContainer.style, {
+    borderRadius: "100px",
     overflow: "hidden",
     position: "relative",
+    width: `${width}px`,
+    maxWidth: `${width}px`,
+    height: `${height}px`,
+    transition: "width 0.4s ease, height 0.4s ease",
   });
 
   const shaderCanvas = document.createElement("canvas");
   shaderCanvas.width = width;
   shaderCanvas.height = height;
   Object.assign(shaderCanvas.style, {
-    width: `${width}px`,
-    height: `${height}px`,
-    display: "block",
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    top: "0",
+    left: "0",
     borderRadius: "100px",
   });
-  shadowWrap.appendChild(shaderCanvas);
+  shaderContainer.appendChild(shaderCanvas);
+  shadowWrap.appendChild(shaderContainer);
   shaderOuter.appendChild(shadowWrap);
 
-  // WebGL shader for liquid metallic luster
+  // WebGL Liquid Metal shader implementation
   const gl = shaderCanvas.getContext("webgl");
+  let speedUniform = 0.45;
   if (gl) {
     const glCtx = gl;
     const vs = `
@@ -387,18 +401,16 @@ function mountLiquidMetalButton(
         vec2 p = (st - 0.5) * 2.0;
         p.x *= u_res.x / u_res.y;
         float len = length(p);
-        float angle = atan(p.y, p.x) + u_time * u_speed * 0.6;
-        float wave = sin(len * 8.0 - u_time * u_speed * 1.8) * cos(angle * 2.0);
+        float angle = atan(p.y, p.x) + u_time * u_speed * 1.6;
+        float wave = sin(len * 7.0 - u_time * u_speed * 2.8) * cos(angle * 3.0);
         
-        vec3 dark = vec3(0.04, 0.07, 0.12);
-        vec3 green = vec3(0.32, 0.89, 0.72);
-        vec3 blue = vec3(0.45, 0.51, 0.99);
-        vec3 shine = vec3(1.0, 1.0, 1.0);
+        vec3 dark = vec3(0.06, 0.07, 0.10);
+        vec3 mid = vec3(0.32, 0.35, 0.44);
+        vec3 bright = vec3(0.88, 0.91, 0.98);
 
         float t = clamp(wave * 0.5 + 0.5, 0.0, 1.0);
-        vec3 col = mix(dark, green, smoothstep(0.1, 0.65, t));
-        col = mix(col, blue, smoothstep(0.6, 0.9, t));
-        col += shine * pow(t, 7.0) * 0.7;
+        vec3 col = mix(dark, mid, smoothstep(0.1, 0.6, t));
+        col = mix(col, bright, pow(t, 5.0));
 
         gl_FragColor = vec4(col, 1.0);
       }
@@ -434,21 +446,19 @@ function mountLiquidMetalButton(
 
     glCtx.uniform2f(uRes, width, height);
 
-    let startTime = performance.now();
-    let speed = 0.8;
-
+    const startTime = performance.now();
     function renderShader(now: number) {
       const elapsed = (now - startTime) / 1000;
       glCtx.viewport(0, 0, width, height);
       glCtx.uniform1f(uTime, elapsed);
-      glCtx.uniform1f(uSpeed, isHovered ? 2.0 : speed);
+      glCtx.uniform1f(uSpeed, speedUniform);
       glCtx.drawArrays(glCtx.TRIANGLES, 0, 6);
-      animationId = requestAnimationFrame(renderShader);
+      animId = requestAnimationFrame(renderShader);
     }
-    animationId = requestAnimationFrame(renderShader);
+    animId = requestAnimationFrame(renderShader);
   }
 
-
+  // Interactive button element
   const btn = document.createElement("button");
   btn.type = type;
   btn.setAttribute("aria-label", label);
@@ -465,6 +475,8 @@ function mountLiquidMetalButton(
     zIndex: "40",
     transformStyle: "preserve-3d",
     transform: "translateZ(25px)",
+    transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.4s ease, height 0.4s ease",
+    overflow: "hidden",
     borderRadius: "100px",
   });
 
@@ -477,21 +489,28 @@ function mountLiquidMetalButton(
   mountEl.appendChild(wrap);
 
   function updatePressVisual() {
-    const t = isPressed ? "translateY(1px) scale(0.97)" : "translateY(0) scale(1)";
+    const t = isPressed ? "translateY(1px) scale(0.98)" : "translateY(0) scale(1)";
     baseLayer.style.transform = `translateZ(10px) ${t}`;
     shaderOuter.style.transform = `translateZ(0px) ${t}`;
-    shadowWrap.style.boxShadow = isHovered
-      ? "0px 0px 0px 1px rgba(82, 228, 184, 0.65), 0px 16px 28px rgba(0, 0, 0, 0.6), 0px 0px 20px rgba(82, 228, 184, 0.2)"
-      : "0px 0px 0px 1px rgba(82, 228, 184, 0.35), 0px 12px 24px rgba(0, 0, 0, 0.5)";
+    baseInner.style.boxShadow = isPressed
+      ? "inset 0px 2px 4px rgba(0, 0, 0, 0.4), inset 0px 1px 2px rgba(0, 0, 0, 0.3)"
+      : "none";
+    shadowWrap.style.boxShadow = isPressed
+      ? "0px 0px 0px 1px rgba(0, 0, 0, 0.5), 0px 1px 2px 0px rgba(0, 0, 0, 0.3)"
+      : isHovered
+      ? "0px 0px 0px 1px rgba(0, 0, 0, 0.4), 0px 12px 6px 0px rgba(0, 0, 0, 0.05), 0px 8px 5px 0px rgba(0, 0, 0, 0.1), 0px 4px 4px 0px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.2)"
+      : "0px 0px 0px 1px rgba(0, 0, 0, 0.3), 0px 36px 14px 0px rgba(0, 0, 0, 0.02), 0px 20px 12px 0px rgba(0, 0, 0, 0.08), 0px 9px 9px 0px rgba(0, 0, 0, 0.12), 0px 2px 5px 0px rgba(0, 0, 0, 0.15)";
   }
 
   btn.addEventListener("mouseenter", () => {
     isHovered = true;
+    speedUniform = 0.95;
     updatePressVisual();
   });
   btn.addEventListener("mouseleave", () => {
     isHovered = false;
     isPressed = false;
+    speedUniform = 0.45;
     updatePressVisual();
   });
   btn.addEventListener("mousedown", () => {
@@ -504,6 +523,11 @@ function mountLiquidMetalButton(
   });
 
   btn.addEventListener("click", (e) => {
+    speedUniform = 1.8;
+    setTimeout(() => {
+      speedUniform = isHovered ? 0.95 : 0.45;
+    }, 300);
+
     const rect = btn.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -515,32 +539,34 @@ function mountLiquidMetalButton(
       width: "20px",
       height: "20px",
       borderRadius: "50%",
-      background: "radial-gradient(circle, rgba(82, 228, 184, 0.65) 0%, rgba(255, 255, 255, 0) 70%)",
+      background: "radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 70%)",
       pointerEvents: "none",
       animation: "ripple-animation 0.6s ease-out",
     });
     btn.appendChild(ripple);
     setTimeout(() => ripple.remove(), 600);
 
-    onClick?.();
+    onClick?.(e);
   });
 
   return {
     destroy: () => {
-      cancelAnimationFrame(animationId);
+      cancelAnimationFrame(animId);
     },
   };
 }
 
-// ── Rotating Earth D3 Visualization ──────────────────────────────────────────
-function initRotatingEarth(earthCanvas: HTMLCanvasElement, panel: HTMLElement) {
+// ── Rotating Earth (verbatim per spec) ───────────────────────────────────────
+function initRotatingEarth(panel: HTMLElement, earthCanvas: HTMLCanvasElement) {
+  if (!panel || !earthCanvas || typeof d3 === "undefined") return;
+
   const context = earthCanvas.getContext("2d");
   if (!context) return;
 
   function getContainerSize() {
     const rect = panel.getBoundingClientRect();
     const w = Math.max(160, rect.width || 320);
-    const h = w;
+    const h = w; // square aspect
     return { w, h };
   }
 
@@ -603,56 +629,57 @@ function initRotatingEarth(earthCanvas: HTMLCanvasElement, panel: HTMLElement) {
   }
 
   function generateDotsInPolygon(feature: any, dotSpacing = 16) {
-    const dots: { lng: number; lat: number }[] = [];
+    const dots: [number, number][] = [];
     const bounds = d3.geoBounds(feature);
     const [[minLng, minLat], [maxLng, maxLat]] = bounds;
     const stepSize = dotSpacing * 0.08;
     for (let lng = minLng; lng <= maxLng; lng += stepSize) {
       for (let lat = minLat; lat <= maxLat; lat += stepSize) {
         const point: [number, number] = [lng, lat];
-        if (pointInFeature(point, feature)) dots.push({ lng, lat });
+        if (pointInFeature(point, feature)) dots.push(point);
       }
     }
     return dots;
   }
 
-  const allDots: { lng: number; lat: number }[] = [];
+  const allDots: [number, number][] = [];
   let landFeatures: any = null;
 
   function render() {
-    context?.clearRect(0, 0, containerWidth, containerHeight);
+    if (!context) return;
+    context.clearRect(0, 0, containerWidth, containerHeight);
 
     const currentScale = projection.scale();
     const scaleFactor = currentScale / radius;
 
-    context?.beginPath();
-    context?.arc(containerWidth / 2, containerHeight / 2, currentScale, 0, 2 * Math.PI);
-    if (context) {
-      context.fillStyle = "#04050c";
-      context.fill();
-      context.strokeStyle = "rgba(82, 228, 184, 0.4)";
-      context.lineWidth = 1.5 * scaleFactor;
-      context.stroke();
-    }
+    context.beginPath();
+    context.arc(containerWidth / 2, containerHeight / 2, currentScale, 0, 2 * Math.PI);
+    context.fillStyle = "#000000";
+    context.fill();
+    context.strokeStyle = "#ffffff";
+    context.lineWidth = 2 * scaleFactor;
+    context.stroke();
 
-    if (landFeatures && context) {
+    if (landFeatures) {
       const graticule = d3.geoGraticule();
       context.beginPath();
       path(graticule());
-      context.strokeStyle = "rgba(255, 255, 255, 0.1)";
+      context.strokeStyle = "#ffffff";
       context.lineWidth = 1 * scaleFactor;
+      context.globalAlpha = 0.25;
       context.stroke();
+      context.globalAlpha = 1;
 
       context.beginPath();
       landFeatures.features.forEach((feature: any) => {
         path(feature);
       });
-      context.strokeStyle = "rgba(82, 228, 184, 0.6)";
+      context.strokeStyle = "#ffffff";
       context.lineWidth = 1 * scaleFactor;
       context.stroke();
 
       allDots.forEach((dot) => {
-        const projected = projection([dot.lng, dot.lat]);
+        const projected = projection(dot);
         if (
           projected &&
           projected[0] >= 0 &&
@@ -662,7 +689,7 @@ function initRotatingEarth(earthCanvas: HTMLCanvasElement, panel: HTMLElement) {
         ) {
           context.beginPath();
           context.arc(projected[0], projected[1], 1.2 * scaleFactor, 0, 2 * Math.PI);
-          context.fillStyle = "rgba(255, 255, 255, 0.65)";
+          context.fillStyle = "#999999";
           context.fill();
         }
       });
@@ -679,7 +706,7 @@ function initRotatingEarth(earthCanvas: HTMLCanvasElement, panel: HTMLElement) {
 
       landFeatures.features.forEach((feature: any) => {
         const dots = generateDotsInPolygon(feature, 16);
-        dots.forEach(([lng, lat]: any) => allDots.push({ lng, lat }));
+        dots.forEach(([lng, lat]) => allDots.push([lng, lat]));
       });
 
       render();
@@ -689,14 +716,14 @@ function initRotatingEarth(earthCanvas: HTMLCanvasElement, panel: HTMLElement) {
     }
   }
 
-  const rotation = [0, 0];
+  const rotation: [number, number] = [0, 0];
   let autoRotate = true;
-  const rotationSpeed = 0.4;
+  const rotationSpeed = 0.1;
 
   const timer = d3.timer(() => {
     if (autoRotate) {
       rotation[0] += rotationSpeed;
-      projection.rotate(rotation as [number, number]);
+      projection.rotate(rotation);
       render();
     }
   });
@@ -714,7 +741,7 @@ function initRotatingEarth(earthCanvas: HTMLCanvasElement, panel: HTMLElement) {
       rotation[0] = startRotation[0] + dx * sensitivity;
       rotation[1] = startRotation[1] - dy * sensitivity;
       rotation[1] = Math.max(-90, Math.min(90, rotation[1]));
-      projection.rotate(rotation as [number, number]);
+      projection.rotate(rotation);
       render();
     }
 
@@ -730,23 +757,51 @@ function initRotatingEarth(earthCanvas: HTMLCanvasElement, panel: HTMLElement) {
     document.addEventListener("mouseup", handleMouseUp);
   };
 
+  const onWheel = (event: WheelEvent) => {
+    event.preventDefault();
+    const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
+    const newRadius = Math.max(radius * 0.5, Math.min(radius * 3, projection.scale() * scaleFactor));
+    projection.scale(newRadius);
+    render();
+  };
+
+  const onResize = () => {
+    const size = getContainerSize();
+    containerWidth = size.w;
+    containerHeight = size.h;
+    radius = Math.min(containerWidth, containerHeight) / 2.2;
+    const dpr2 = window.devicePixelRatio || 1;
+    earthCanvas.width = containerWidth * dpr2;
+    earthCanvas.height = containerHeight * dpr2;
+    earthCanvas.style.width = `${containerWidth}px`;
+    earthCanvas.style.height = `${containerHeight}px`;
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.scale(dpr2, dpr2);
+    projection.scale(radius).translate([containerWidth / 2, containerHeight / 2]);
+    render();
+  };
+
   earthCanvas.addEventListener("mousedown", onMouseDown);
+  earthCanvas.addEventListener("wheel", onWheel, { passive: false });
+  window.addEventListener("resize", onResize);
 
   loadWorldData();
 
   return () => {
     timer.stop();
     earthCanvas.removeEventListener("mousedown", onMouseDown);
+    earthCanvas.removeEventListener("wheel", onWheel);
+    window.removeEventListener("resize", onResize);
   };
 }
 
-// ── WebGL Fluid Simulation Engine ────────────────────────────────────────────
-function initFluidSimulation(canvas: HTMLCanvasElement) {
+// ── Fluid simulation engine (verbatim per spec) ──────────────────────────────
+function fluidSimulation(canvas: HTMLCanvasElement) {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
 
   const config = {
-    SIM_RESOLUTION: 160,
+    SIM_RESOLUTION: 200,
     DYE_RESOLUTION: 512,
     DENSITY_DISSIPATION: 0.958,
     VELOCITY_DISSIPATION: 0.96,
@@ -758,7 +813,13 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
     COLORFUL: true,
     PAUSED: false,
     BACK_COLOR: { r: 4, g: 5, b: 12 },
-    TRANSPARENT: false,
+    TRANSPARENT: true,
+    BLOOM: false,
+    BLOOM_ITERATIONS: 8,
+    BLOOM_RESOLUTION: 256,
+    BLOOM_INTENSITY: 0.8,
+    BLOOM_THRESHOLD: 0.8,
+    BLOOM_SOFT_KNEE: 0.7,
   };
 
   function pointerPrototype(this: any) {
@@ -774,10 +835,17 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
 
   const pointers: any[] = [];
   const splatStack: number[] = [];
+  const bloomFramebuffers: any[] = [];
   pointers.push(new (pointerPrototype as any)());
 
   const { gl, ext } = getWebGLContext(canvas);
-  if (!gl || !ext) return;
+  if (!gl || !ext) return () => {};
+
+  if (isMobile()) config.SHADING = false;
+  if (!ext.supportLinearFiltering) {
+    config.SHADING = false;
+    config.BLOOM = false;
+  }
 
   function getWebGLContext(canv: HTMLCanvasElement) {
     const params = { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false };
@@ -796,8 +864,11 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
     }
 
     glCtx.clearColor(0.0, 0.0, 0.0, 1.0);
+
     const halfFloatTexType = isWebGL2 ? glCtx.HALF_FLOAT : halfFloat?.HALF_FLOAT_OES;
-    let formatRGBA: any, formatRG: any, formatR: any;
+    let formatRGBA: any;
+    let formatRG: any;
+    let formatR: any;
 
     if (isWebGL2) {
       formatRGBA = getSupportedFormat(glCtx, glCtx.RGBA16F, glCtx.RGBA, halfFloatTexType);
@@ -809,7 +880,16 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
       formatR = getSupportedFormat(glCtx, glCtx.RGBA, glCtx.RGBA, halfFloatTexType);
     }
 
-    return { gl: glCtx, ext: { formatRGBA, formatRG, formatR, halfFloatTexType, supportLinearFiltering } };
+    return {
+      gl: glCtx,
+      ext: {
+        formatRGBA,
+        formatRG,
+        formatR,
+        halfFloatTexType,
+        supportLinearFiltering,
+      },
+    };
   }
 
   function getSupportedFormat(glCtx: any, internalFormat: any, format: any, type: any) {
@@ -843,20 +923,31 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
     return status === glCtx.FRAMEBUFFER_COMPLETE;
   }
 
+  function isMobile() {
+    return /Mobi|Android/i.test(navigator.userAgent);
+  }
+
   class GLProgram {
     uniforms: any = {};
     program: any;
     constructor(vertexShader: any, fragmentShader: any) {
+      this.uniforms = {};
       this.program = gl.createProgram();
+
       gl.attachShader(this.program, vertexShader);
       gl.attachShader(this.program, fragmentShader);
       gl.linkProgram(this.program);
+
+      if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
+        throw gl.getProgramInfoLog(this.program);
+
       const uniformCount = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
       for (let i = 0; i < uniformCount; i++) {
         const uniformName = gl.getActiveUniform(this.program, i).name;
         this.uniforms[uniformName] = gl.getUniformLocation(this.program, uniformName);
       }
     }
+
     bind() {
       gl.useProgram(this.program);
     }
@@ -866,70 +957,458 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+      throw gl.getShaderInfoLog(shader);
+
     return shader;
   }
 
   const baseVertexShader = compileShader(
     gl.VERTEX_SHADER,
-    `precision highp float; attribute vec2 aPosition; varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB; uniform vec2 texelSize;
-    void main () { vUv = aPosition * 0.5 + 0.5; vL = vUv - vec2(texelSize.x, 0.0); vR = vUv + vec2(texelSize.x, 0.0); vT = vUv + vec2(0.0, texelSize.y); vB = vUv - vec2(0.0, texelSize.y); gl_Position = vec4(aPosition, 0.0, 1.0); }`
+    `
+        precision highp float;
+        attribute vec2 aPosition;
+        varying vec2 vUv;
+        varying vec2 vL;
+        varying vec2 vR;
+        varying vec2 vT;
+        varying vec2 vB;
+        uniform vec2 texelSize;
+        void main () {
+            vUv = aPosition * 0.5 + 0.5;
+            vL = vUv - vec2(texelSize.x, 0.0);
+            vR = vUv + vec2(texelSize.x, 0.0);
+            vT = vUv + vec2(0.0, texelSize.y);
+            vB = vUv - vec2(0.0, texelSize.y);
+            gl_Position = vec4(aPosition, 0.0, 1.0);
+        }
+    `
   );
 
   const clearShader = compileShader(
     gl.FRAGMENT_SHADER,
-    `precision mediump float; precision mediump sampler2D; varying highp vec2 vUv; uniform sampler2D uTexture; uniform float value; void main () { gl_FragColor = value * texture2D(uTexture, vUv); }`
+    `
+        precision mediump float;
+        precision mediump sampler2D;
+        varying highp vec2 vUv;
+        uniform sampler2D uTexture;
+        uniform float value;
+        void main () {
+            gl_FragColor = value * texture2D(uTexture, vUv);
+        }
+    `
+  );
+
+  const colorShader = compileShader(
+    gl.FRAGMENT_SHADER,
+    `
+        precision mediump float;
+        uniform vec4 color;
+        void main () {
+            gl_FragColor = color;
+        }
+    `
+  );
+
+  const backgroundShader = compileShader(
+    gl.FRAGMENT_SHADER,
+    `
+        precision highp float;
+        precision highp sampler2D;
+        varying vec2 vUv;
+        uniform sampler2D uTexture;
+        uniform float aspectRatio;
+        #define SCALE 25.0
+        void main () {
+            vec2 uv = floor(vUv * SCALE * vec2(aspectRatio, 1.0));
+            float v = mod(uv.x + uv.y, 2.0);
+            v = v * 0.1 + 0.8;
+            gl_FragColor = vec4(vec3(v), 1.0);
+        }
+    `
   );
 
   const displayShader = compileShader(
     gl.FRAGMENT_SHADER,
-    `precision highp float; precision highp sampler2D; varying vec2 vUv; uniform sampler2D uTexture; void main () { vec3 C = texture2D(uTexture, vUv).rgb; float a = max(C.r, max(C.g, C.b)); gl_FragColor = vec4(C, a); }`
+    `
+        precision highp float;
+        precision highp sampler2D;
+        varying vec2 vUv;
+        uniform sampler2D uTexture;
+        void main () {
+            vec3 C = texture2D(uTexture, vUv).rgb;
+            float a = max(C.r, max(C.g, C.b));
+            gl_FragColor = vec4(C, a);
+        }
+    `
+  );
+
+  const displayBloomShader = compileShader(
+    gl.FRAGMENT_SHADER,
+    `
+        precision highp float;
+        precision highp sampler2D;
+        varying vec2 vUv;
+        uniform sampler2D uTexture;
+        uniform sampler2D uBloom;
+        uniform sampler2D uDithering;
+        uniform vec2 ditherScale;
+        void main () {
+            vec3 C = texture2D(uTexture, vUv).rgb;
+            vec3 bloom = texture2D(uBloom, vUv).rgb;
+            vec3 noise = texture2D(uDithering, vUv * ditherScale).rgb;
+            noise = noise * 2.0 - 1.0;
+            bloom += noise / 800.0;
+            bloom = pow(bloom.rgb, vec3(1.0 / 2.2));
+            C += bloom;
+            float a = max(C.r, max(C.g, C.b));
+            gl_FragColor = vec4(C, a);
+        }
+    `
+  );
+
+  const displayShadingShader = compileShader(
+    gl.FRAGMENT_SHADER,
+    `
+        precision highp float;
+        precision highp sampler2D;
+        varying vec2 vUv;
+        varying vec2 vL;
+        varying vec2 vR;
+        varying vec2 vT;
+        varying vec2 vB;
+        uniform sampler2D uTexture;
+        uniform vec2 texelSize;
+        void main () {
+            vec3 L = texture2D(uTexture, vL).rgb;
+            vec3 R = texture2D(uTexture, vR).rgb;
+            vec3 T = texture2D(uTexture, vT).rgb;
+            vec3 B = texture2D(uTexture, vB).rgb;
+            vec3 C = texture2D(uTexture, vUv).rgb;
+            float dx = length(R) - length(L);
+            float dy = length(T) - length(B);
+            vec3 n = normalize(vec3(dx, dy, length(texelSize)));
+            vec3 l = vec3(0.0, 0.0, 1.0);
+            float diffuse = clamp(dot(n, l) + 0.7, 0.7, 1.0);
+            C.rgb *= diffuse;
+            float a = max(C.r, max(C.g, C.b));
+            gl_FragColor = vec4(C, a);
+        }
+    `
+  );
+
+  const displayBloomShadingShader = compileShader(
+    gl.FRAGMENT_SHADER,
+    `
+        precision highp float;
+        precision highp sampler2D;
+        varying vec2 vUv;
+        varying vec2 vL;
+        varying vec2 vR;
+        varying vec2 vT;
+        varying vec2 vB;
+        uniform sampler2D uTexture;
+        uniform sampler2D uBloom;
+        uniform sampler2D uDithering;
+        uniform vec2 ditherScale;
+        uniform vec2 texelSize;
+        void main () {
+            vec3 L = texture2D(uTexture, vL).rgb;
+            vec3 R = texture2D(uTexture, vR).rgb;
+            vec3 T = texture2D(uTexture, vT).rgb;
+            vec3 B = texture2D(uTexture, vB).rgb;
+            vec3 C = texture2D(uTexture, vUv).rgb;
+            float dx = length(R) - length(L);
+            float dy = length(T) - length(B);
+            vec3 n = normalize(vec3(dx, dy, length(texelSize)));
+            vec3 l = vec3(0.0, 0.0, 1.0);
+            float diffuse = clamp(dot(n, l) + 0.7, 0.7, 1.0);
+            C *= diffuse;
+            vec3 bloom = texture2D(uBloom, vUv).rgb;
+            vec3 noise = texture2D(uDithering, vUv * ditherScale).rgb;
+            noise = noise * 2.0 - 1.0;
+            bloom += noise / 800.0;
+            bloom = pow(bloom.rgb, vec3(1.0 / 2.2));
+            C += bloom;
+            float a = max(C.r, max(C.g, C.b));
+            gl_FragColor = vec4(C, a);
+        }
+    `
+  );
+
+  const bloomPrefilterShader = compileShader(
+    gl.FRAGMENT_SHADER,
+    `
+        precision mediump float;
+        precision mediump sampler2D;
+        varying vec2 vUv;
+        uniform sampler2D uTexture;
+        uniform vec3 curve;
+        uniform float threshold;
+        void main () {
+            vec3 c = texture2D(uTexture, vUv).rgb;
+            float br = max(c.r, max(c.g, c.b));
+            float rq = clamp(br - curve.x, 0.0, curve.y);
+            rq = curve.z * rq * rq;
+            c *= max(rq, br - threshold) / max(br, 0.0001);
+            gl_FragColor = vec4(c, 0.0);
+        }
+    `
+  );
+
+  const bloomBlurShader = compileShader(
+    gl.FRAGMENT_SHADER,
+    `
+        precision mediump float;
+        precision mediump sampler2D;
+        varying vec2 vL;
+        varying vec2 vR;
+        varying vec2 vT;
+        varying vec2 vB;
+        uniform sampler2D uTexture;
+        void main () {
+            vec4 sum = vec4(0.0);
+            sum += texture2D(uTexture, vL);
+            sum += texture2D(uTexture, vR);
+            sum += texture2D(uTexture, vT);
+            sum += texture2D(uTexture, vB);
+            sum *= 0.25;
+            gl_FragColor = sum;
+        }
+    `
+  );
+
+  const bloomFinalShader = compileShader(
+    gl.FRAGMENT_SHADER,
+    `
+        precision mediump float;
+        precision mediump sampler2D;
+        varying vec2 vL;
+        varying vec2 vR;
+        varying vec2 vT;
+        varying vec2 vB;
+        uniform sampler2D uTexture;
+        uniform float intensity;
+        void main () {
+            vec4 sum = vec4(0.0);
+            sum += texture2D(uTexture, vL);
+            sum += texture2D(uTexture, vR);
+            sum += texture2D(uTexture, vT);
+            sum += texture2D(uTexture, vB);
+            sum *= 0.25;
+            gl_FragColor = sum * intensity;
+        }
+    `
   );
 
   const splatShader = compileShader(
     gl.FRAGMENT_SHADER,
-    `precision highp float; precision highp sampler2D; varying vec2 vUv; uniform sampler2D uTarget; uniform float aspectRatio; uniform vec3 color; uniform vec2 point; uniform float radius;
-    void main () { vec2 p = vUv - point.xy; p.x *= aspectRatio; vec3 splat = exp(-dot(p, p) / radius) * color; vec3 base = texture2D(uTarget, vUv).xyz; gl_FragColor = vec4(base + splat, 1.0); }`
+    `
+        precision highp float;
+        precision highp sampler2D;
+        varying vec2 vUv;
+        uniform sampler2D uTarget;
+        uniform float aspectRatio;
+        uniform vec3 color;
+        uniform vec2 point;
+        uniform float radius;
+        void main () {
+            vec2 p = vUv - point.xy;
+            p.x *= aspectRatio;
+            vec3 splat = exp(-dot(p, p) / radius) * color;
+            vec3 base = texture2D(uTarget, vUv).xyz;
+            gl_FragColor = vec4(base + splat, 1.0);
+        }
+    `
+  );
+
+  const advectionManualFilteringShader = compileShader(
+    gl.FRAGMENT_SHADER,
+    `
+        precision highp float;
+        precision highp sampler2D;
+        varying vec2 vUv;
+        uniform sampler2D uVelocity;
+        uniform sampler2D uSource;
+        uniform vec2 texelSize;
+        uniform vec2 dyeTexelSize;
+        uniform float dt;
+        uniform float dissipation;
+        vec4 bilerp (sampler2D sam, vec2 uv, vec2 tsize) {
+            vec2 st = uv / tsize - 0.5;
+            vec2 iuv = floor(st);
+            vec2 fuv = fract(st);
+            vec4 a = texture2D(sam, (iuv + vec2(0.5, 0.5)) * tsize);
+            vec4 b = texture2D(sam, (iuv + vec2(1.5, 0.5)) * tsize);
+            vec4 c = texture2D(sam, (iuv + vec2(0.5, 1.5)) * tsize);
+            vec4 d = texture2D(sam, (iuv + vec2(1.5, 1.5)) * tsize);
+            return mix(mix(a, b, fuv.x), mix(c, d, fuv.x), fuv.y);
+        }
+        void main () {
+            vec2 coord = vUv - dt * bilerp(uVelocity, vUv, texelSize).xy * texelSize;
+            gl_FragColor = dissipation * bilerp(uSource, coord, dyeTexelSize);
+            gl_FragColor.a = 1.0;
+        }
+    `
   );
 
   const advectionShader = compileShader(
     gl.FRAGMENT_SHADER,
-    `precision highp float; precision highp sampler2D; varying vec2 vUv; uniform sampler2D uVelocity; uniform sampler2D uSource; uniform vec2 texelSize; uniform float dt; uniform float dissipation;
-    void main () { vec2 coord = vUv - dt * texture2D(uVelocity, vUv).xy * texelSize; gl_FragColor = dissipation * texture2D(uSource, coord); gl_FragColor.a = 1.0; }`
+    `
+        precision highp float;
+        precision highp sampler2D;
+        varying vec2 vUv;
+        uniform sampler2D uVelocity;
+        uniform sampler2D uSource;
+        uniform vec2 texelSize;
+        uniform float dt;
+        uniform float dissipation;
+        void main () {
+            vec2 coord = vUv - dt * texture2D(uVelocity, vUv).xy * texelSize;
+            gl_FragColor = dissipation * texture2D(uSource, coord);
+            gl_FragColor.a = 1.0;
+        }
+    `
   );
 
   const divergenceShader = compileShader(
     gl.FRAGMENT_SHADER,
-    `precision mediump float; precision mediump sampler2D; varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB; uniform sampler2D uVelocity;
-    void main () { float L = texture2D(uVelocity, vL).x; float R = texture2D(uVelocity, vR).x; float T = texture2D(uVelocity, vT).y; float B = texture2D(uVelocity, vB).y; vec2 C = texture2D(uVelocity, vUv).xy; if (vL.x < 0.0) { L = -C.x; } if (vR.x > 1.0) { R = -C.x; } if (vT.y > 1.0) { T = -C.y; } if (vB.y < 0.0) { B = -C.y; } float div = 0.5 * (R - L + T - B); gl_FragColor = vec4(div, 0.0, 0.0, 1.0); }`
+    `
+        precision mediump float;
+        precision mediump sampler2D;
+        varying highp vec2 vUv;
+        varying highp vec2 vL;
+        varying highp vec2 vR;
+        varying highp vec2 vT;
+        varying highp vec2 vB;
+        uniform sampler2D uVelocity;
+        void main () {
+            float L = texture2D(uVelocity, vL).x;
+            float R = texture2D(uVelocity, vR).x;
+            float T = texture2D(uVelocity, vT).y;
+            float B = texture2D(uVelocity, vB).y;
+            vec2 C = texture2D(uVelocity, vUv).xy;
+            if (vL.x < 0.0) { L = -C.x; }
+            if (vR.x > 1.0) { R = -C.x; }
+            if (vT.y > 1.0) { T = -C.y; }
+            if (vB.y < 0.0) { B = -C.y; }
+            float div = 0.5 * (R - L + T - B);
+            gl_FragColor = vec4(div, 0.0, 0.0, 1.0);
+        }
+    `
   );
 
   const curlShader = compileShader(
     gl.FRAGMENT_SHADER,
-    `precision mediump float; precision mediump sampler2D; varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB; uniform sampler2D uVelocity;
-    void main () { float L = texture2D(uVelocity, vL).y; float R = texture2D(uVelocity, vR).y; float T = texture2D(uVelocity, vT).x; float B = texture2D(uVelocity, vB).x; float vorticity = R - L - T + B; gl_FragColor = vec4(0.5 * vorticity, 0.0, 0.0, 1.0); }`
+    `
+        precision mediump float;
+        precision mediump sampler2D;
+        varying highp vec2 vUv;
+        varying highp vec2 vL;
+        varying highp vec2 vR;
+        varying highp vec2 vT;
+        varying highp vec2 vB;
+        uniform sampler2D uVelocity;
+        void main () {
+            float L = texture2D(uVelocity, vL).y;
+            float R = texture2D(uVelocity, vR).y;
+            float T = texture2D(uVelocity, vT).x;
+            float B = texture2D(uVelocity, vB).x;
+            float vorticity = R - L - T + B;
+            gl_FragColor = vec4(0.5 * vorticity, 0.0, 0.0, 1.0);
+        }
+    `
   );
 
   const vorticityShader = compileShader(
     gl.FRAGMENT_SHADER,
-    `precision highp float; precision highp sampler2D; varying vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB; uniform sampler2D uVelocity; uniform sampler2D uCurl; uniform float curl; uniform float dt;
-    void main () { float L = texture2D(uCurl, vL).x; float R = texture2D(uCurl, vR).x; float T = texture2D(uCurl, vT).x; float B = texture2D(uCurl, vB).x; vec2 C = texture2D(uCurl, vUv).x; vec2 force = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L)); force /= length(force) + 0.0001; force *= curl * C; force.y *= -1.0; vec2 vel = texture2D(uVelocity, vUv).xy; gl_FragColor = vec4(vel + force * dt, 0.0, 1.0); }`
+    `
+        precision highp float;
+        precision highp sampler2D;
+        varying vec2 vUv;
+        varying vec2 vL;
+        varying vec2 vR;
+        varying vec2 vT;
+        varying vec2 vB;
+        uniform sampler2D uVelocity;
+        uniform sampler2D uCurl;
+        uniform float curl;
+        uniform float dt;
+        void main () {
+            float L = texture2D(uCurl, vL).x;
+            float R = texture2D(uCurl, vR).x;
+            float T = texture2D(uCurl, vT).x;
+            float B = texture2D(uCurl, vB).x;
+            float C = texture2D(uCurl, vUv).x;
+            vec2 force = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L));
+            force /= length(force) + 0.0001;
+            force *= curl * C;
+            force.y *= -1.0;
+            vec2 vel = texture2D(uVelocity, vUv).xy;
+            gl_FragColor = vec4(vel + force * dt, 0.0, 1.0);
+        }
+    `
   );
 
   const pressureShader = compileShader(
     gl.FRAGMENT_SHADER,
-    `precision mediump float; precision mediump sampler2D; varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB; uniform sampler2D uPressure; uniform sampler2D uDivergence;
-    void main () { float L = texture2D(uPressure, vL).x; float R = texture2D(uPressure, vR).x; float T = texture2D(uPressure, vT).x; float B = texture2D(uPressure, vB).x; float divergence = texture2D(uDivergence, vUv).x; float pressure = (L + R + B + T - divergence) * 0.25; gl_FragColor = vec4(pressure, 0.0, 0.0, 1.0); }`
+    `
+        precision mediump float;
+        precision mediump sampler2D;
+        varying highp vec2 vUv;
+        varying highp vec2 vL;
+        varying highp vec2 vR;
+        varying highp vec2 vT;
+        varying highp vec2 vB;
+        uniform sampler2D uPressure;
+        uniform sampler2D uDivergence;
+        vec2 boundary (vec2 uv) {
+            return uv;
+        }
+        void main () {
+            float L = texture2D(uPressure, boundary(vL)).x;
+            float R = texture2D(uPressure, boundary(vR)).x;
+            float T = texture2D(uPressure, boundary(vT)).x;
+            float B = texture2D(uPressure, boundary(vB)).x;
+            float C = texture2D(uPressure, vUv).x;
+            float divergence = texture2D(uDivergence, vUv).x;
+            float pressure = (L + R + B + T - divergence) * 0.25;
+            gl_FragColor = vec4(pressure, 0.0, 0.0, 1.0);
+        }
+    `
   );
 
   const gradientSubtractShader = compileShader(
     gl.FRAGMENT_SHADER,
-    `precision mediump float; precision mediump sampler2D; varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB; uniform sampler2D uPressure; uniform sampler2D uVelocity;
-    void main () { float L = texture2D(uPressure, vL).x; float R = texture2D(uPressure, vR).x; float T = texture2D(uPressure, vT).x; float B = texture2D(uPressure, vB).x; vec2 velocity = texture2D(uVelocity, vUv).xy; velocity.xy -= vec2(R - L, T - B); gl_FragColor = vec4(velocity, 0.0, 1.0); }`
+    `
+        precision mediump float;
+        precision mediump sampler2D;
+        varying highp vec2 vUv;
+        varying highp vec2 vL;
+        varying highp vec2 vR;
+        varying highp vec2 vT;
+        varying highp vec2 vB;
+        uniform sampler2D uPressure;
+        uniform sampler2D uVelocity;
+        vec2 boundary (vec2 uv) {
+            return uv;
+        }
+        void main () {
+            float L = texture2D(uPressure, boundary(vL)).x;
+            float R = texture2D(uPressure, boundary(vR)).x;
+            float T = texture2D(uPressure, boundary(vT)).x;
+            float B = texture2D(uPressure, boundary(vB)).x;
+            vec2 velocity = texture2D(uVelocity, vUv).xy;
+            velocity.xy -= vec2(R - L, T - B);
+            gl_FragColor = vec4(velocity, 0.0, 1.0);
+        }
+    `
   );
 
   const blit = (() => {
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -942,12 +1421,25 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
   })();
 
   let simWidth: number, simHeight: number, dyeWidth: number, dyeHeight: number;
-  let density: any, velocity: any, divergence: any, curl: any, pressure: any;
+  let density: any, velocity: any, divergence: any, curl: any, pressure: any, bloom: any;
+
+  const ditheringTexture = createNoiseTexture(256);
 
   const clearProgram = new GLProgram(baseVertexShader, clearShader);
+  const colorProgram = new GLProgram(baseVertexShader, colorShader);
+  const backgroundProgram = new GLProgram(baseVertexShader, backgroundShader);
   const displayProgram = new GLProgram(baseVertexShader, displayShader);
+  const displayBloomProgram = new GLProgram(baseVertexShader, displayBloomShader);
+  const displayShadingProgram = new GLProgram(baseVertexShader, displayShadingShader);
+  const displayBloomShadingProgram = new GLProgram(baseVertexShader, displayBloomShadingShader);
+  const bloomPrefilterProgram = new GLProgram(baseVertexShader, bloomPrefilterShader);
+  const bloomBlurProgram = new GLProgram(baseVertexShader, bloomBlurShader);
+  const bloomFinalProgram = new GLProgram(baseVertexShader, bloomFinalShader);
   const splatProgram = new GLProgram(baseVertexShader, splatShader);
-  const advectionProgram = new GLProgram(baseVertexShader, advectionShader);
+  const advectionProgram = new GLProgram(
+    baseVertexShader,
+    ext.supportLinearFiltering ? advectionShader : advectionManualFilteringShader
+  );
   const divergenceProgram = new GLProgram(baseVertexShader, divergenceShader);
   const curlProgram = new GLProgram(baseVertexShader, curlShader);
   const vorticityProgram = new GLProgram(baseVertexShader, vorticityShader);
@@ -971,12 +1463,40 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
 
     if (density == null)
       density = createDoubleFBO(dyeWidth, dyeHeight, rgba.internalFormat, rgba.format, texType, filtering);
+    else
+      density = resizeDoubleFBO(density, dyeWidth, dyeHeight, rgba.internalFormat, rgba.format, texType, filtering);
+
     if (velocity == null)
       velocity = createDoubleFBO(simWidth, simHeight, rg.internalFormat, rg.format, texType, filtering);
+    else
+      velocity = resizeDoubleFBO(velocity, simWidth, simHeight, rg.internalFormat, rg.format, texType, filtering);
 
     divergence = createFBO(simWidth, simHeight, r.internalFormat, r.format, texType, gl.NEAREST);
     curl = createFBO(simWidth, simHeight, r.internalFormat, r.format, texType, gl.NEAREST);
     pressure = createDoubleFBO(simWidth, simHeight, r.internalFormat, r.format, texType, gl.NEAREST);
+
+    initBloomFramebuffers();
+  }
+
+  function initBloomFramebuffers() {
+    const res = getResolution(config.BLOOM_RESOLUTION);
+
+    const texType = ext.halfFloatTexType;
+    const rgba = ext.formatRGBA;
+    const filtering = ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
+
+    bloom = createFBO(res.width, res.height, rgba.internalFormat, rgba.format, texType, filtering);
+
+    bloomFramebuffers.length = 0;
+    for (let i = 0; i < config.BLOOM_ITERATIONS; i++) {
+      const width = res.width >> (i + 1);
+      const height = res.height >> (i + 1);
+
+      if (width < 2 || height < 2) break;
+
+      const fbo = createFBO(width, height, rgba.internalFormat, rgba.format, texType, filtering);
+      bloomFramebuffers.push(fbo);
+    }
   }
 
   function createFBO(w: number, h: number, internalFormat: any, format: any, type: any, param: any) {
@@ -1033,6 +1553,51 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
     };
   }
 
+  function resizeFBO(target: any, w: number, h: number, internalFormat: any, format: any, type: any, param: any) {
+    const newFBO = createFBO(w, h, internalFormat, format, type, param);
+    clearProgram.bind();
+    gl.uniform1i(clearProgram.uniforms.uTexture, target.attach(0));
+    gl.uniform1f(clearProgram.uniforms.value, 1);
+    blit(newFBO.fbo);
+    return newFBO;
+  }
+
+  function resizeDoubleFBO(
+    target: any,
+    w: number,
+    h: number,
+    internalFormat: any,
+    format: any,
+    type: any,
+    param: any
+  ) {
+    target.read = resizeFBO(target.read, w, h, internalFormat, format, type, param);
+    target.write = createFBO(w, h, internalFormat, format, type, param);
+    return target;
+  }
+
+  function createNoiseTexture(size: number) {
+    const data = new Uint8Array(size * size * 3);
+    for (let i = 0; i < data.length; i++) data[i] = Math.floor(Math.random() * 256);
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, size, size, 0, gl.RGB, gl.UNSIGNED_BYTE, data);
+    return {
+      texture,
+      width: size,
+      height: size,
+      attach(id: number) {
+        gl.activeTexture(gl.TEXTURE0 + id);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        return id;
+      },
+    };
+  }
+
   initFramebuffers();
   multipleSplats(34);
   for (let i = 0; i < 8; i++) splatStack.push(10 + Math.floor(Math.random() * 10));
@@ -1046,7 +1611,7 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
   let lastVColorTime = 0;
   const engineStart = Date.now();
   const ORBIT_RADIUS = 420;
-  const ORBIT_SPEED = 0.026;
+  const ORBIT_SPEED = 0.009;
   const ORBIT_START_DELAY = 700;
 
   let rafHandle = 0;
@@ -1104,6 +1669,7 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
     }
 
     if (!config.COLORFUL) return;
+
     if (lastColorChangeTime + 100 < Date.now()) {
       lastColorChangeTime = Date.now();
       for (let i = 0; i < pointers.length; i++) {
@@ -1160,6 +1726,8 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
 
     advectionProgram.bind();
     gl.uniform2f(advectionProgram.uniforms.texelSize, 1.0 / simWidth, 1.0 / simHeight);
+    if (!ext.supportLinearFiltering)
+      gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, 1.0 / simWidth, 1.0 / simHeight);
     const velocityId = velocity.read.attach(0);
     gl.uniform1i(advectionProgram.uniforms.uVelocity, velocityId);
     gl.uniform1i(advectionProgram.uniforms.uSource, velocityId);
@@ -1169,6 +1737,9 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
     velocity.swap();
 
     gl.viewport(0, 0, dyeWidth, dyeHeight);
+
+    if (!ext.supportLinearFiltering)
+      gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, 1.0 / dyeWidth, 1.0 / dyeHeight);
     gl.uniform1i(advectionProgram.uniforms.uVelocity, velocity.read.attach(0));
     gl.uniform1i(advectionProgram.uniforms.uSource, density.read.attach(1));
     gl.uniform1f(advectionProgram.uniforms.dissipation, config.DENSITY_DISSIPATION);
@@ -1177,16 +1748,99 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
   }
 
   function render(target: any) {
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.enable(gl.BLEND);
+    if (config.BLOOM) applyBloom(density.read, bloom);
+
+    if (target == null || !config.TRANSPARENT) {
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.enable(gl.BLEND);
+    } else {
+      gl.disable(gl.BLEND);
+    }
 
     const width = target == null ? gl.drawingBufferWidth : dyeWidth;
     const height = target == null ? gl.drawingBufferHeight : dyeHeight;
+
     gl.viewport(0, 0, width, height);
 
-    displayProgram.bind();
-    gl.uniform1i(displayProgram.uniforms.uTexture, density.read.attach(0));
+    if (!config.TRANSPARENT) {
+      colorProgram.bind();
+      const bc = config.BACK_COLOR;
+      gl.uniform4f(colorProgram.uniforms.color, bc.r / 255, bc.g / 255, bc.b / 255, 1);
+      blit(target);
+    }
+
+    if (config.SHADING) {
+      const program = config.BLOOM ? displayBloomShadingProgram : displayShadingProgram;
+      program.bind();
+      gl.uniform2f(program.uniforms.texelSize, 1.0 / width, 1.0 / height);
+      gl.uniform1i(program.uniforms.uTexture, density.read.attach(0));
+      if (config.BLOOM) {
+        gl.uniform1i(program.uniforms.uBloom, bloom.attach(1));
+        gl.uniform1i(program.uniforms.uDithering, ditheringTexture.attach(2));
+        const scale = getTextureScale(ditheringTexture, width, height);
+        gl.uniform2f(program.uniforms.ditherScale, scale.x, scale.y);
+      }
+    } else {
+      const program = config.BLOOM ? displayBloomProgram : displayProgram;
+      program.bind();
+      gl.uniform1i(program.uniforms.uTexture, density.read.attach(0));
+      if (config.BLOOM) {
+        gl.uniform1i(program.uniforms.uBloom, bloom.attach(1));
+        gl.uniform1i(program.uniforms.uDithering, ditheringTexture.attach(2));
+        const scale = getTextureScale(ditheringTexture, width, height);
+        gl.uniform2f(program.uniforms.ditherScale, scale.x, scale.y);
+      }
+    }
+
     blit(target);
+  }
+
+  function applyBloom(source: any, destination: any) {
+    if (bloomFramebuffers.length < 2) return;
+
+    let last = destination;
+
+    gl.disable(gl.BLEND);
+    bloomPrefilterProgram.bind();
+    const knee = config.BLOOM_THRESHOLD * config.BLOOM_SOFT_KNEE + 0.0001;
+    const curve0 = config.BLOOM_THRESHOLD - knee;
+    const curve1 = knee * 2;
+    const curve2 = 0.25 / knee;
+    gl.uniform3f(bloomPrefilterProgram.uniforms.curve, curve0, curve1, curve2);
+    gl.uniform1f(bloomPrefilterProgram.uniforms.threshold, config.BLOOM_THRESHOLD);
+    gl.uniform1i(bloomPrefilterProgram.uniforms.uTexture, source.attach(0));
+    gl.viewport(0, 0, last.width, last.height);
+    blit(last.fbo);
+
+    bloomBlurProgram.bind();
+    for (let i = 0; i < bloomFramebuffers.length; i++) {
+      const dest = bloomFramebuffers[i];
+      gl.uniform2f(bloomBlurProgram.uniforms.texelSize, 1.0 / last.width, 1.0 / last.height);
+      gl.uniform1i(bloomBlurProgram.uniforms.uTexture, last.attach(0));
+      gl.viewport(0, 0, dest.width, dest.height);
+      blit(dest.fbo);
+      last = dest;
+    }
+
+    gl.blendFunc(gl.ONE, gl.ONE);
+    gl.enable(gl.BLEND);
+
+    for (let i = bloomFramebuffers.length - 2; i >= 0; i--) {
+      const baseTex = bloomFramebuffers[i];
+      gl.uniform2f(bloomBlurProgram.uniforms.texelSize, 1.0 / last.width, 1.0 / last.height);
+      gl.uniform1i(bloomBlurProgram.uniforms.uTexture, last.attach(0));
+      gl.viewport(0, 0, baseTex.width, baseTex.height);
+      blit(baseTex.fbo);
+      last = baseTex;
+    }
+
+    gl.disable(gl.BLEND);
+    bloomFinalProgram.bind();
+    gl.uniform2f(bloomFinalProgram.uniforms.texelSize, 1.0 / last.width, 1.0 / last.height);
+    gl.uniform1i(bloomFinalProgram.uniforms.uTexture, last.attach(0));
+    gl.uniform1f(bloomFinalProgram.uniforms.intensity, config.BLOOM_INTENSITY);
+    gl.viewport(0, 0, destination.width, destination.height);
+    blit(destination.fbo);
   }
 
   function splat(x: number, y: number, dx: number, dy: number, color: any) {
@@ -1234,7 +1888,13 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
     return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
-  const onMouseMove = (e: MouseEvent) => {
+  const teardown: (() => void)[] = [];
+  function on(target: any, type: string, handler: any, opts?: any) {
+    target.addEventListener(type, handler, opts);
+    teardown.push(() => target.removeEventListener(type, handler, opts));
+  }
+
+  on(window, "mousemove", (e: MouseEvent) => {
     const { x, y } = pointerPos(e.clientX, e.clientY);
     const p = pointers[0];
     if (!p.everMoved) {
@@ -1251,32 +1911,63 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
     p.x = x;
     p.y = y;
     p.color = generateColor();
-  };
+  });
 
-  const onTouchMove = (e: TouchEvent) => {
-    const touches = e.targetTouches;
-    for (let i = 0; i < touches.length; i++) {
-      if (i >= pointers.length) pointers.push(new (pointerPrototype as any)());
-      const p = pointers[i];
-      const { x, y } = pointerPos(touches[i].clientX, touches[i].clientY);
-      p.down = true;
-      p.moved = p.everMoved === true;
-      p.everMoved = true;
-      p.dx = (x - p.x) * 8.0;
-      p.dy = (y - p.y) * 8.0;
-      p.x = x;
-      p.y = y;
-    }
-  };
+  on(
+    window,
+    "touchmove",
+    (e: TouchEvent) => {
+      const touches = e.targetTouches;
+      for (let i = 0; i < touches.length; i++) {
+        if (i >= pointers.length) pointers.push(new (pointerPrototype as any)());
+        const p = pointers[i];
+        const { x, y } = pointerPos(touches[i].clientX, touches[i].clientY);
+        p.down = true;
+        p.moved = p.everMoved === true;
+        p.everMoved = true;
+        p.dx = (x - p.x) * 8.0;
+        p.dy = (y - p.y) * 8.0;
+        p.x = x;
+        p.y = y;
+      }
+    },
+    { passive: true }
+  );
 
-  window.addEventListener("mousemove", onMouseMove);
-  window.addEventListener("touchmove", onTouchMove, { passive: true });
+  on(
+    window,
+    "touchstart",
+    (e: TouchEvent) => {
+      const touches = e.targetTouches;
+      for (let i = 0; i < touches.length; i++) {
+        if (i >= pointers.length) pointers.push(new (pointerPrototype as any)());
+        const p = pointers[i];
+        const { x, y } = pointerPos(touches[i].clientX, touches[i].clientY);
+        p.id = touches[i].identifier;
+        p.down = true;
+        p.x = x;
+        p.y = y;
+        p.color = generateColor();
+      }
+    },
+    { passive: true }
+  );
 
-  return () => {
+  on(window, "mouseup", () => {
+    pointers[0].down = false;
+  });
+
+  on(window, "touchend", (e: TouchEvent) => {
+    const touches = e.changedTouches;
+    for (let i = 0; i < touches.length; i++)
+      for (let j = 0; j < pointers.length; j++)
+        if (touches[i].identifier === pointers[j].id) pointers[j].down = false;
+  });
+
+  return function destroy() {
     destroyed = true;
     if (rafHandle) cancelAnimationFrame(rafHandle);
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("touchmove", onTouchMove);
+    for (const off of teardown) off();
   };
 
   function generateColor() {
@@ -1289,19 +1980,46 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
   }
 
   function HSVtoRGB(h: number, s: number, v: number) {
-    let r = 0, g = 0, b = 0;
+    let r = 0,
+      g = 0,
+      b = 0;
     const i = Math.floor(h * 6);
     const f = h * 6 - i;
     const p = v * (1 - s);
     const q = v * (1 - f * s);
     const t = v * (1 - (1 - f) * s);
+
     switch (i % 6) {
-      case 0: r = v; g = t; b = p; break;
-      case 1: r = q; g = v; b = p; break;
-      case 2: r = p; g = v; b = t; break;
-      case 3: r = p; g = q; b = v; break;
-      case 4: r = t; g = p; b = v; break;
-      case 5: r = v; g = p; b = q; break;
+      case 0:
+        r = v;
+        g = t;
+        b = p;
+        break;
+      case 1:
+        r = q;
+        g = v;
+        b = p;
+        break;
+      case 2:
+        r = p;
+        g = v;
+        b = t;
+        break;
+      case 3:
+        r = p;
+        g = q;
+        b = v;
+        break;
+      case 4:
+        r = t;
+        g = p;
+        b = v;
+        break;
+      case 5:
+        r = v;
+        g = p;
+        b = q;
+        break;
     }
     return { r, g, b };
   }
@@ -1309,9 +2027,15 @@ function initFluidSimulation(canvas: HTMLCanvasElement) {
   function getResolution(resolution: number) {
     let aspectRatio = gl.drawingBufferWidth / gl.drawingBufferHeight;
     if (aspectRatio < 1) aspectRatio = 1.0 / aspectRatio;
+
     const max = Math.round(resolution * aspectRatio);
     const min = Math.round(resolution);
+
     if (gl.drawingBufferWidth > gl.drawingBufferHeight) return { width: max, height: min };
     else return { width: min, height: max };
+  }
+
+  function getTextureScale(texture: any, width: number, height: number) {
+    return { x: width / texture.width, y: height / texture.height };
   }
 }
