@@ -1611,7 +1611,7 @@ function fluidSimulation(canvas: HTMLCanvasElement) {
   let lastVColorTime = 0;
   const engineStart = Date.now();
   const ORBIT_RADIUS = 420;
-  const ORBIT_SPEED = 0.009;
+  const ORBIT_SPEED = 0.0185;
   const ORBIT_START_DELAY = 700;
 
   let rafHandle = 0;
