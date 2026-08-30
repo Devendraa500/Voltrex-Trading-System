@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Lenis from "lenis";
 import * as d3 from "d3";
 import { ParticleWave } from "@/components/particle-wave";
+import { SplineSceneBasic } from "@/components/spline-scene-basic";
 
 export function LandingPage() {
   const router = useRouter();
@@ -209,10 +210,20 @@ export function LandingPage() {
           </div>
         </div>
 
-        <footer className="site-footer" id="footer">
-          © 2026 Voltrex Trading System — engineered for quantitative equities analysis.
-        </footer>
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-neutral-400 text-xs font-mono animate-bounce opacity-75 pointer-events-none">
+          <span>Scroll to explore 3D topology</span>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </div>
       </section>
+
+      {/* ── Lower Fullscreen Section with Spline 3D Scene ─────────────────── */}
+      <SplineSceneBasic />
+
+      <footer className="w-full py-8 border-t border-white/10 text-center text-xs text-neutral-500 font-mono bg-[#04050c]">
+        © 2026 Voltrex Trading System — engineered for quantitative equities analysis.
+      </footer>
     </div>
   );
 }
