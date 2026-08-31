@@ -218,12 +218,8 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── Lower Fullscreen Section with Spline 3D Scene ─────────────────── */}
+      {/* ── Lower Fullscreen Section with Spline 3D Scene & KineticGrid Footer ── */}
       <SplineSceneBasic />
-
-      <footer className="w-full py-8 border-t border-white/10 text-center text-xs text-neutral-500 font-mono bg-[#04050c]">
-        © 2026 Voltrex Trading System — engineered for quantitative equities analysis.
-      </footer>
     </div>
   );
 }

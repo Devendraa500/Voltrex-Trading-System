@@ -11,9 +11,9 @@ export function SplineSceneBasic() {
   return (
     <KineticGrid
       globalColor="monochrome"
-      className="w-full min-h-screen flex items-center justify-center px-4 sm:px-8 lg:px-16 py-12 lg:py-20 text-[#eef0f6] z-10"
+      className="w-full min-h-screen flex flex-col justify-between pt-12 lg:pt-20 text-[#eef0f6] z-10"
     >
-      <div className="w-full max-w-7xl relative">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-16 relative my-auto">
         <Spotlight
           className="-top-40 left-0 md:left-60 md:-top-20"
           fill="#ffffff"
@@ -79,6 +79,11 @@ export function SplineSceneBasic() {
           </div>
         </div>
       </div>
+
+      {/* Footer embedded seamlessly inside KineticGrid background */}
+      <footer className="w-full py-8 border-t border-white/10 text-center text-xs text-[#8e94a8] font-mono bg-transparent z-10">
+        © 2026 Voltrex Trading System — engineered for quantitative equities analysis.
+      </footer>
     </KineticGrid>
   );
 }
