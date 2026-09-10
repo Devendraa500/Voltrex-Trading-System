@@ -13,7 +13,7 @@
 
 <br/>
 
-[✨ Live Demo](#-quick-start) • [📐 The Equilibrium Model](#-the-voltrex-equilibrium-engine) • [🏗️ System Architecture](#️-architecture) • [🔌 API Reference](#-api-routes) • [🚀 Setup Guide](#-installation--first-time-setup)
+[✨ Live Demo](https://voltrex-trading-system.vercel.app/) • [📐 The Equilibrium Model](#-the-voltrex-equilibrium-engine) • [🏗️ System Architecture](#️-architecture) • [🔌 API Reference](#-api-routes) • [🚀 Setup Guide](#-installation--first-time-setup)
 
 <br/>
 
@@ -274,7 +274,3 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
 
 ---
-
-<div align="center">
-  <sub>Engineered by <a href="https://github.com/Devendraa500">Devendra</a> • Built for Quantitative Equities Analysis</sub>
-</div>
