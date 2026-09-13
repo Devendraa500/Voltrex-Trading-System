@@ -6,9 +6,11 @@ import Lenis from "lenis";
 import * as d3 from "d3";
 import { ParticleWave } from "@/components/particle-wave";
 import { SplineSceneBasic } from "@/components/spline-scene-basic";
+import { usePerfTier } from "@/hooks/use-perf-tier";
 
 export function LandingPage() {
   const router = useRouter();
+  const perfTier = usePerfTier();
   const fluidCanvasRef = useRef<HTMLCanvasElement>(null);
   const earthCanvasRef = useRef<HTMLCanvasElement>(null);
   const earthPanelRef = useRef<HTMLDivElement>(null);
@@ -51,7 +53,7 @@ export function LandingPage() {
       baseDelay: number,
       stagger: number,
       duration: number,
-      fromY: number
+      fromY: number,
     ) {
       words.forEach((word, i) => {
         const delay = baseDelay + i * stagger;
@@ -114,15 +116,15 @@ export function LandingPage() {
       })?.destroy;
     }
 
-    // ── 4. Fluid simulation engine (verbatim per spec) ────────────────
+    // ── 4. Fluid simulation engine (only on high tier) ────────────────
     let fluidCleanup: (() => void) | undefined;
-    if (fluidCanvasRef.current) {
+    if (perfTier === "high" && fluidCanvasRef.current) {
       fluidCleanup = fluidSimulation(fluidCanvasRef.current);
     }
 
-    // ── 5. Rotating Earth (verbatim per spec) ─────────────────────────
+    // ── 5. Rotating Earth (high & medium tiers) ─────────────────────
     let earthCleanup: (() => void) | undefined;
-    if (earthCanvasRef.current && earthPanelRef.current) {
+    if (perfTier !== "low" && earthCanvasRef.current && earthPanelRef.current) {
       earthCleanup = initRotatingEarth(earthPanelRef.current, earthCanvasRef.current);
     }
 
@@ -135,13 +137,30 @@ export function LandingPage() {
       fluidCleanup?.();
       earthCleanup?.();
     };
-  }, [router]);
+  }, [router, perfTier]);
 
   return (
     <div className="landing-page-body">
       <section className="hero">
-        <ParticleWave />
-        <canvas ref={fluidCanvasRef} className="fluid-canvas" aria-hidden="true" />
+        {/* ParticleWave: only on high tier */}
+        {perfTier === "high" && <ParticleWave />}
+
+        {/* Fluid canvas: only on high tier */}
+        {perfTier === "high" && (
+          <canvas ref={fluidCanvasRef} className="fluid-canvas" aria-hidden="true" />
+        )}
+
+        {/* Static gradient fallback for medium/low tiers */}
+        {perfTier !== "high" && (
+          <div
+            className="absolute inset-0 z-0"
+            style={{
+              background: "radial-gradient(ellipse at 30% 50%, rgba(82,228,184,0.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 30%, rgba(100,140,255,0.06) 0%, transparent 50%), #04050c",
+            }}
+            aria-hidden="true"
+          />
+        )}
+
         <div className="scrim" aria-hidden="true" />
 
         <header className="nav" id="nav">
@@ -174,9 +193,12 @@ export function LandingPage() {
           <span ref={navCtaMountRef} id="navCtaMount" className="liquid-btn-mount" />
         </header>
 
-        <div className="earth-panel" id="earthPanel" ref={earthPanelRef}>
-          <canvas ref={earthCanvasRef} id="earthCanvas" />
-        </div>
+        {/* Earth globe: high & medium tiers only */}
+        {perfTier !== "low" && (
+          <div className="earth-panel" id="earthPanel" ref={earthPanelRef}>
+            <canvas ref={earthCanvasRef} id="earthCanvas" />
+          </div>
+        )}
 
         <div className="center-col">
           <p className="badge" id="badge">
@@ -218,8 +240,14 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── Lower Fullscreen Section with Spline 3D Scene & KineticGrid Footer ── */}
-      <SplineSceneBasic />
+      {/* ── Lower Fullscreen Section: Spline 3D + KineticGrid (high & medium only) ── */}
+      {perfTier !== "low" ? (
+        <SplineSceneBasic />
+      ) : (
+        <footer className="w-full py-8 border-t border-white/10 text-center text-xs text-neutral-500 font-mono bg-[#04050c]">
+          © 2026 Voltrex Trading System — engineered for quantitative equities analysis.
+        </footer>
+      )}
     </div>
   );
 }
