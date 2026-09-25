@@ -38,23 +38,7 @@ export default function MercuryLogin({ onClose, onSuccess }: MercuryLoginProps) 
     ];
   }, []);
 
-  const blobRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const x = e.clientX / window.innerWidth;
-      const y = e.clientY / window.innerHeight;
-      blobRefs.current.forEach((blob, index) => {
-        if (blob) {
-          const speed = (index + 1) * 20;
-          blob.style.marginLeft = `${x * speed}px`;
-          blob.style.marginTop = `${y * speed}px`;
-        }
-      });
-    };
-    document.addEventListener("mousemove", handleMouseMove);
-    return () => document.removeEventListener("mousemove", handleMouseMove);
-  }, []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,13 +73,15 @@ export default function MercuryLogin({ onClose, onSuccess }: MercuryLoginProps) 
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;800&family=Space+Mono&display=swap');
 
         .mercury-wrapper {
-          --bg: #050505;
+          --bg: rgba(4, 5, 12, 0.65);
           --mercury: #e0e0e0;
           --mercury-dark: #666666;
           --accent: #ffffff;
           --text-dim: rgba(255, 255, 255, 0.5);
           --filter-goo: url('#gooey');
           background-color: var(--bg);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           color: var(--accent);
           font-family: 'Inter', sans-serif;
           height: 100vh;
@@ -121,6 +107,7 @@ export default function MercuryLogin({ onClose, onSuccess }: MercuryLoginProps) 
           z-index: 0;
           filter: var(--filter-goo);
           opacity: 0.6;
+          pointer-events: none;
         }
 
         .blob {
@@ -131,7 +118,7 @@ export default function MercuryLogin({ onClose, onSuccess }: MercuryLoginProps) 
           animation: float 20s infinite alternate ease-in-out;
           box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5),
                       10px 10px 30px rgba(255,255,255,0.2);
-          transition: margin 0.1s ease-out;
+          pointer-events: none;
         }
 
         @keyframes float {
@@ -146,7 +133,13 @@ export default function MercuryLogin({ onClose, onSuccess }: MercuryLoginProps) 
           z-index: 10;
           width: 100%;
           max-width: 440px;
-          padding: 40px;
+          padding: 38px 40px;
+          background: rgba(10, 14, 22, 0.72);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 24px;
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
         }
 
         .mercury-header {
@@ -377,7 +370,6 @@ export default function MercuryLogin({ onClose, onSuccess }: MercuryLoginProps) 
         {blobsData.map((data, index) => (
           <div
             key={index}
-            ref={(el) => { blobRefs.current[index] = el; }}
             className="blob"
             style={{
               width: `${data.size}px`,

@@ -20,6 +20,7 @@ interface LanyardBadgeProps {
   inkColor?: string;
   cardColor?: string;
   onDismiss?: () => void;
+  dismissLabel?: string;
 }
 
 type Pt = { x: number; y: number; px: number; py: number; w: number };
@@ -62,13 +63,14 @@ export default function LanyardBadge({
   email = "",
   title = "VOLTREX",
   subtitle = "Institutional Trading Terminal · 2026",
-  cardWidth = 220,
+  cardWidth = 240,
   height = "100svh",
   className = "",
   strapColor = "#141312",
   inkColor = "#b59a6c",
   cardColor = "#0a0a0a",
   onDismiss,
+  dismissLabel = "SEE PLANS →",
 }: LanyardBadgeProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -77,7 +79,7 @@ export default function LanyardBadge({
   const [showBack, setShowBack] = useState(false);
 
   const cw = cardWidth;
-  const ch = Math.round(cw * 1.5);
+  const ch = Math.round(cw * 1.58);
   const ringR = Math.max(7, Math.round(cw * 0.036));
   const clipH = Math.round(cw * 0.1);
 
@@ -342,7 +344,7 @@ export default function LanyardBadge({
     <div
       ref={rootRef}
       className={"fixed inset-0 z-[9999] flex items-center justify-center select-none " + className}
-      style={{ height, background: "rgba(4,5,12,0.6)", backdropFilter: "blur(30px)" }}
+      style={{ height, background: "rgba(4,5,12,0.55)", backdropFilter: "blur(10px)" }}
     >
       {/* Animated shine overlay for ambient shimmer */}
       <style>{`
@@ -374,7 +376,7 @@ export default function LanyardBadge({
           onClick={onDismiss}
           className="absolute top-6 right-6 z-20 px-5 py-2.5 rounded-full border border-white/15 bg-white/[0.06] text-[#b9becf] text-xs font-mono tracking-wider hover:bg-white/10 transition-colors backdrop-blur-xl"
         >
-          ENTER TERMINAL →
+          {dismissLabel}
         </button>
       )}
 
@@ -419,39 +421,107 @@ export default function LanyardBadge({
         >
           {/* FRONT */}
           <div style={face}>
-            <div className="relative h-full w-full flex flex-col" style={{ background: cardColor, color: "#eef0f6" }}>
-              {/* Top accent bar */}
-              <div style={{ height: 6 * s, background: `linear-gradient(90deg, ${inkColor}, #eef0f6)` }} />
-              <div className="flex-1 flex flex-col justify-between p-4" style={{ padding: 18 * s }}>
-                <div>
-                  <div style={{ fontFamily: '"Space Mono", monospace', fontSize: 7 * s, letterSpacing: "0.3em", color: "#b9becf", textTransform: "uppercase" }}>
-                    VOLTREX TERMINAL
-                  </div>
-                  <div style={{ fontSize: 22 * s, fontWeight: 700, marginTop: 8 * s, letterSpacing: "-0.02em", lineHeight: 1 }}>
-                    {title}
-                  </div>
-                  <div style={{ fontSize: 7 * s, marginTop: 6 * s, color: "#b9becf", letterSpacing: "0.15em", textTransform: "uppercase" }}>
-                    {subtitle}
-                  </div>
+            <div className="relative h-full w-full flex flex-col justify-between" style={{ background: cardColor, color: "#eef0f6" }}>
+              {/* Top Accent & Micro Header */}
+              <div>
+                <div style={{ height: 4 * s, background: `linear-gradient(90deg, ${inkColor}, #ffffff, ${inkColor})` }} />
+                <div className="flex items-center justify-between px-3 py-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+                  <span style={{ fontSize: 5.5 * s, fontFamily: '"Space Mono", monospace', letterSpacing: "0.2em", color: "#8e94a8" }}>
+                    NSE·IN-VTX-0982
+                  </span>
+                  <span className="flex items-center gap-1" style={{ fontSize: 5.5 * s, fontFamily: '"Space Mono", monospace', color: inkColor }}>
+                    <span style={{ width: 4 * s, height: 4 * s, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
+                    SEC LVL 4
+                  </span>
                 </div>
+              </div>
 
-                {/* Decorative ornament */}
-                <div style={{ display: "flex", justifyContent: "center", margin: `${12 * s}px 0` }}>
-                  <svg viewBox="-50 -50 100 100" fill="none" stroke={inkColor} strokeWidth={1} style={{ width: 60 * s, opacity: 0.6 }}>
-                    <circle r={45} />
-                    <circle r={35} />
-                    <circle r={15} />
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <line key={i} x1={0} y1={-20} x2={0} y2={-42} transform={`rotate(${i * 45})`} />
-                    ))}
-                    <circle r={4} fill={inkColor} />
+              {/* Smart Card Chip & NFC row */}
+              <div className="flex items-center justify-between px-4 pt-1">
+                {/* EMV Gold Chip SVG */}
+                <div style={{ width: 34 * s, height: 26 * s, borderRadius: 4 * s, background: "linear-gradient(135deg, #d4af37 0%, #aa820a 50%, #f3e5ab 100%)", padding: 2 * s, boxShadow: "inset 0 1px 2px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.4)" }}>
+                  <svg viewBox="0 0 34 26" fill="none" style={{ width: "100%", height: "100%" }}>
+                    <rect x="0.5" y="0.5" width="33" height="25" rx="3" stroke="#8a6909" strokeWidth="0.8" fill="none" />
+                    <line x1="11" y1="1" x2="11" y2="25" stroke="#8a6909" strokeWidth="0.7" />
+                    <line x1="23" y1="1" x2="23" y2="25" stroke="#8a6909" strokeWidth="0.7" />
+                    <line x1="1" y1="13" x2="33" y2="13" stroke="#8a6909" strokeWidth="0.7" />
+                    <circle cx="17" cy="13" r="3.5" fill="#f3e5ab" stroke="#8a6909" strokeWidth="0.7" />
                   </svg>
                 </div>
 
-                <div style={{ borderTop: `1px solid rgba(255,255,255,0.1)`, paddingTop: 8 * s }}>
-                  <div style={{ fontSize: 6 * s, color: "#b9becf", fontFamily: '"Space Mono", monospace', letterSpacing: "0.2em" }}>
-                    INSTITUTIONAL ACCESS BADGE
+                {/* Hologram Badge */}
+                <div style={{
+                  padding: `${2 * s}px ${6 * s}px`,
+                  borderRadius: 4 * s,
+                  background: "linear-gradient(120deg, rgba(255,255,255,0.15), rgba(181,154,108,0.3), rgba(64,156,255,0.2))",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3 * s,
+                }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 10 * s, height: 10 * s, color: inkColor }}>
+                    <path d="M8.5 16.5a5 5 0 0 1 0-9" strokeLinecap="round" />
+                    <path d="M12 19a8.5 8.5 0 0 1 0-14" strokeLinecap="round" />
+                    <path d="M15.5 21.5a12 12 0 0 1 0-19" strokeLinecap="round" />
+                  </svg>
+                  <span style={{ fontSize: 6 * s, fontFamily: '"Space Mono", monospace', letterSpacing: "0.15em", color: "#eef0f6", fontWeight: 700 }}>
+                    QUANT DESK
+                  </span>
+                </div>
+              </div>
+
+              {/* Brand & Title */}
+              <div className="px-4 py-1">
+                <div style={{ fontFamily: '"Space Mono", monospace', fontSize: 6.5 * s, letterSpacing: "0.25em", color: inkColor, textTransform: "uppercase" }}>
+                  VOLTREX QUANTITATIVE
+                </div>
+                <div style={{ fontSize: 20 * s, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, marginTop: 2 * s }}>
+                  {title}
+                </div>
+                <div style={{ fontSize: 6.5 * s, marginTop: 3 * s, color: "#8e94a8", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  {subtitle}
+                </div>
+              </div>
+
+              {/* Center Clearance Meta + Harmonic Rose Watermark */}
+              <div className="px-4 py-1.5 flex items-center justify-between" style={{ background: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 5.5 * s, fontFamily: '"Space Mono", monospace', color: "#8e94a8", letterSpacing: "0.12em" }}>
+                    CLEARANCE: T+0 COLOCATED
                   </div>
+                  <div style={{ fontSize: 5.5 * s, fontFamily: '"Space Mono", monospace', color: "#b9becf", letterSpacing: "0.12em", marginTop: 2 * s }}>
+                    GATEWAY: BKC-DC2 (0.38ms)
+                  </div>
+                  <div style={{ fontSize: 5.5 * s, fontFamily: '"Space Mono", monospace', color: inkColor, letterSpacing: "0.12em", marginTop: 2 * s }}>
+                    ID: #VTX-8492-AX7
+                  </div>
+                </div>
+
+                <svg viewBox="-30 -30 60 60" fill="none" stroke={inkColor} strokeWidth={0.9} style={{ width: 36 * s, height: 36 * s, opacity: 0.75, flexShrink: 0 }}>
+                  <circle r={26} strokeDasharray="2 2" />
+                  <circle r={18} />
+                  <polygon points="0,-18 4,-4 18,0 4,4 0,18 -4,4 -18,0 -4,-4" fill="rgba(181,154,108,0.15)" stroke={inkColor} strokeWidth={0.8} />
+                  <circle r={3} fill={inkColor} />
+                </svg>
+              </div>
+
+              {/* Barcode & Security Hash Footer */}
+              <div className="px-4 pb-2.5">
+                <div className="flex items-center justify-between mb-1" style={{ height: 20 * s, opacity: 0.85 }}>
+                  {[3, 1, 2, 1, 4, 1, 2, 3, 1, 3, 2, 1, 1, 4, 2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 2, 1, 3, 4, 1, 2, 1, 3].map((w, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        width: `${w * 0.85 * s}px`,
+                        height: "100%",
+                        background: idx % 2 === 0 ? "#eef0f6" : "transparent",
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center justify-between" style={{ fontSize: 5 * s, fontFamily: '"Space Mono", monospace', color: "#8e94a8", letterSpacing: "0.15em" }}>
+                  <span>*VTX-2026-NSE-9982*</span>
+                  <span>SHA-256 ENCRYPTED</span>
                 </div>
               </div>
             </div>
@@ -460,43 +530,136 @@ export default function LanyardBadge({
 
           {/* BACK */}
           <div style={{ ...face, transform: "rotateY(180deg)" }}>
-            <div className="relative h-full w-full flex flex-col" style={{ background: cardColor, color: "#eef0f6" }}>
-              <div style={{ height: 6 * s, background: `linear-gradient(90deg, #eef0f6, ${inkColor})` }} />
-              <div className="flex-1 flex flex-col justify-between" style={{ padding: 18 * s }}>
-                <div>
-                  <div style={{ fontFamily: '"Space Mono", monospace', fontSize: 7 * s, letterSpacing: "0.3em", color: "#b9becf", textTransform: "uppercase" }}>
-                    TRADER PROFILE
+            <div className="relative h-full w-full flex flex-col justify-between" style={{ background: cardColor, color: "#eef0f6" }}>
+              {/* Micro Header Strip */}
+              <div>
+                <div style={{ height: 4 * s, background: `linear-gradient(90deg, #ffffff, ${inkColor}, #ffffff)` }} />
+                <div className="flex items-center justify-between px-3 py-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+                  <span style={{ fontSize: 5.5 * s, fontFamily: '"Space Mono", monospace', letterSpacing: "0.2em", color: "#8e94a8" }}>
+                    DOSSIER · CONFIDENTIAL
+                  </span>
+                  <span style={{ fontSize: 5.5 * s, fontFamily: '"Space Mono", monospace', color: "#10b981", letterSpacing: "0.15em" }}>
+                    STATUS: ACTIVE
+                  </span>
+                </div>
+              </div>
+
+              {/* Magnetic Stripe */}
+              <div
+                style={{
+                  height: 22 * s,
+                  background: "linear-gradient(180deg, #1b1b1f 0%, #0d0d10 50%, #17171a 100%)",
+                  borderTop: "1px solid rgba(255,255,255,0.06)",
+                  borderBottom: "1px solid rgba(255,255,255,0.06)",
+                  position: "relative",
+                }}
+              >
+                <div style={{ position: "absolute", inset: 0, opacity: 0.15, backgroundImage: "repeating-linear-gradient(0deg, #fff, #fff 1px, transparent 1px, transparent 4px)" }} />
+              </div>
+
+              {/* Trader Identity Section */}
+              <div className="px-4 py-1">
+                <div style={{ fontFamily: '"Space Mono", monospace', fontSize: 6 * s, letterSpacing: "0.25em", color: inkColor, textTransform: "uppercase" }}>
+                  AUTHORIZED OPERATOR
+                </div>
+                <div style={{ fontSize: 17 * s, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.1, marginTop: 2 * s }}>
+                  {name}
+                </div>
+                <div style={{ fontSize: 7.5 * s, marginTop: 2 * s, color: "#b9becf", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  {role}
+                </div>
+                {email && (
+                  <div style={{ fontSize: 6.5 * s, marginTop: 2 * s, color: "#8e94a8", fontFamily: '"Space Mono", monospace' }}>
+                    {email}
                   </div>
-                  <div style={{ width: 20 * s, height: 2 * s, background: inkColor, margin: `${10 * s}px 0` }} />
-                  <div style={{ fontSize: 18 * s, fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.1 }}>
-                    {name}
+                )}
+              </div>
+
+              {/* 4-Cell Quantitative Parameters Grid */}
+              <div className="px-4 py-0.5">
+                <div className="grid grid-cols-2 gap-1.5" style={{ fontSize: 5.2 * s, fontFamily: '"Space Mono", monospace' }}>
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", padding: `${2.5 * s}px ${5 * s}px`, borderRadius: 4 * s }}>
+                    <div style={{ color: "#8e94a8", letterSpacing: "0.1em" }}>DESK</div>
+                    <div style={{ color: "#eef0f6", fontWeight: 600, marginTop: 1 }}>Harmonic HFT</div>
                   </div>
-                  <div style={{ fontSize: 8 * s, marginTop: 4 * s, color: "#b9becf", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                    {role}
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", padding: `${2.5 * s}px ${5 * s}px`, borderRadius: 4 * s }}>
+                    <div style={{ color: "#8e94a8", letterSpacing: "0.1em" }}>MARGIN CAP</div>
+                    <div style={{ color: "#10b981", fontWeight: 600, marginTop: 1 }}>₹50,000,000</div>
                   </div>
-                  {email && (
-                    <div style={{ fontSize: 7 * s, marginTop: 8 * s, color: "#8e94a8", fontFamily: '"Space Mono", monospace' }}>
-                      {email}
-                    </div>
-                  )}
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", padding: `${2.5 * s}px ${5 * s}px`, borderRadius: 4 * s }}>
+                    <div style={{ color: "#8e94a8", letterSpacing: "0.1em" }}>ROUTER</div>
+                    <div style={{ color: "#eef0f6", fontWeight: 600, marginTop: 1 }}>Smart SOR-v4</div>
+                  </div>
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", padding: `${2.5 * s}px ${5 * s}px`, borderRadius: 4 * s }}>
+                    <div style={{ color: "#8e94a8", letterSpacing: "0.1em" }}>ALGO AUDIT</div>
+                    <div style={{ color: inkColor, fontWeight: 600, marginTop: 1 }}>SEBI PASSED</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* QR Code Matrix & Security Validation */}
+              <div className="px-4 py-1 flex items-center justify-between">
+                <div style={{ background: "#ffffff", padding: 2.5 * s, borderRadius: 4 * s, flexShrink: 0 }}>
+                  <svg viewBox="0 0 29 29" style={{ width: 26 * s, height: 26 * s, display: "block" }}>
+                    <rect x="0" y="0" width="7" height="7" fill="#000" />
+                    <rect x="1" y="1" width="5" height="5" fill="#fff" />
+                    <rect x="2" y="2" width="3" height="3" fill="#000" />
+
+                    <rect x="22" y="0" width="7" height="7" fill="#000" />
+                    <rect x="23" y="1" width="5" height="5" fill="#fff" />
+                    <rect x="24" y="2" width="3" height="3" fill="#000" />
+
+                    <rect x="0" y="22" width="7" height="7" fill="#000" />
+                    <rect x="1" y="23" width="5" height="5" fill="#fff" />
+                    <rect x="2" y="24" width="3" height="3" fill="#000" />
+
+                    <rect x="8" y="3" width="2" height="2" fill="#000" />
+                    <rect x="12" y="3" width="2" height="2" fill="#000" />
+                    <rect x="16" y="3" width="2" height="2" fill="#000" />
+                    <rect x="3" y="8" width="2" height="2" fill="#000" />
+                    <rect x="3" y="12" width="2" height="2" fill="#000" />
+                    <rect x="3" y="16" width="2" height="2" fill="#000" />
+
+                    <rect x="10" y="10" width="4" height="4" fill="#000" />
+                    <rect x="16" y="11" width="3" height="2" fill="#000" />
+                    <rect x="11" y="16" width="2" height="3" fill="#000" />
+                    <rect x="15" y="16" width="4" height="3" fill="#000" />
+                    <rect x="21" y="10" width="3" height="3" fill="#000" />
+                    <rect x="10" y="21" width="3" height="3" fill="#000" />
+                    <rect x="15" y="22" width="3" height="2" fill="#000" />
+                    <rect x="21" y="15" width="2" height="4" fill="#000" />
+                    <rect x="23" y="22" width="3" height="3" fill="#000" />
+                  </svg>
                 </div>
 
-                {/* Bottom dark strip */}
-                <div
-                  style={{
-                    background: strapColor,
-                    borderRadius: `${20 * s}px ${20 * s}px 0 0`,
-                    padding: `${10 * s}px ${14 * s}px`,
-                    marginTop: 12 * s,
-                    marginLeft: -(18 * s),
-                    marginRight: -(18 * s),
-                    marginBottom: -(18 * s),
-                    color: inkColor,
-                  }}
-                >
-                  <div style={{ fontSize: 6 * s, fontFamily: '"Space Mono", monospace', letterSpacing: "0.25em", textTransform: "uppercase", opacity: 0.8 }}>
-                    VERIFIED · VOLTREX SYSTEM
+                <div style={{ marginLeft: 8 * s, flex: 1 }}>
+                  <div style={{ fontSize: 5.2 * s, fontFamily: '"Space Mono", monospace', color: inkColor, fontWeight: 700 }}>
+                    DIGITALLY SIGNED
                   </div>
+                  <div style={{ fontSize: 4.6 * s, fontFamily: '"Space Mono", monospace', color: "#8e94a8", marginTop: 1, lineHeight: 1.2 }}>
+                    SCAN FOR LIVE CLEARING VALIDATION
+                  </div>
+                  <div style={{ fontSize: 4.2 * s, fontFamily: '"Space Mono", monospace', color: "#666", marginTop: 1 }}>
+                    HASH: 7d1a98c2...e890f4
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Regulatory Strip */}
+              <div
+                style={{
+                  background: strapColor,
+                  borderRadius: `${14 * s}px ${14 * s}px 0 0`,
+                  padding: `${5 * s}px ${10 * s}px`,
+                  color: inkColor,
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontSize: 5.2 * s, fontFamily: '"Space Mono", monospace', letterSpacing: "0.2em", textTransform: "uppercase", opacity: 0.9 }}>
+                  VERIFIED OPERATOR · VOLTREX SYSTEM
+                </div>
+                <div style={{ fontSize: 4 * s, color: "#8e94a8", marginTop: 1, letterSpacing: "0.05em" }}>
+                  NON-TRANSFERABLE · IMMEDIATE REVOCATION UPON BREACH
                 </div>
               </div>
             </div>
@@ -505,8 +668,20 @@ export default function LanyardBadge({
         </div>
       </div>
 
-      <div className="absolute bottom-8 text-center text-xs text-[#8e94a8] font-mono z-10">
-        Drag the badge to swing · Click to flip · Press &quot;Enter Terminal&quot; to continue
+      {/* Bottom CTA Button */}
+      {onDismiss && (
+        <div className="absolute bottom-14 z-30 flex flex-col items-center">
+          <button
+            onClick={onDismiss}
+            className="flex items-center gap-2 px-8 py-3 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-mono text-xs sm:text-sm tracking-wider font-semibold shadow-lg shadow-orange-500/30 transition-all cursor-pointer hover:scale-105 active:scale-95"
+          >
+            <span>{dismissLabel}</span>
+          </button>
+        </div>
+      )}
+
+      <div className="absolute bottom-5 text-center text-xs text-[#8e94a8] font-mono z-20 pointer-events-none">
+        Drag the badge to swing · Click to flip · Press &quot;{dismissLabel}&quot; to explore plans
       </div>
     </div>
   );

@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 import Lenis from "lenis";
 import * as d3 from "d3";
 import { ParticleWave } from "@/components/particle-wave";
-import { SplineSceneBasic } from "@/components/spline-scene-basic";
 import { usePerfTier } from "@/hooks/use-perf-tier";
 import MercuryLogin from "@/components/mercury-login";
 import LanyardBadge from "@/components/ui/lanyard-badge";
+import { PlansModal } from "@/components/plans-modal";
 
 export function LandingPage() {
   const router = useRouter();
   const perfTier = usePerfTier();
+  const frozen = perfTier === "low" || perfTier === "medium";
   const [showLogin, setShowLogin] = useState(false);
   const [badgeUser, setBadgeUser] = useState<{ name: string; email: string; role: string } | null>(null);
+  const [showPlans, setShowPlans] = useState(false);
   const fluidCanvasRef = useRef<HTMLCanvasElement>(null);
   const earthCanvasRef = useRef<HTMLCanvasElement>(null);
   const earthPanelRef = useRef<HTMLDivElement>(null);
@@ -104,6 +106,7 @@ export function LandingPage() {
       navCleanup = mountLiquidMetalButton(navCtaMountRef.current, {
         label: "Login / Signup",
         type: "button",
+        frozen,
         onClick: () => {
           setShowLogin(true);
         },
@@ -114,22 +117,23 @@ export function LandingPage() {
       reqCleanup = mountLiquidMetalButton(requestAccessMountRef.current, {
         label: "Request Access",
         type: "submit",
+        frozen,
         onClick: () => {
           router.push("/terminal");
         },
       })?.destroy;
     }
 
-    // ── 4. Fluid simulation engine (only on high tier) ────────────────
+    // ── 4. Fluid simulation engine (freeze on low/medium) ────────────────
     let fluidCleanup: (() => void) | undefined;
-    if (perfTier === "high" && fluidCanvasRef.current) {
-      fluidCleanup = fluidSimulation(fluidCanvasRef.current);
+    if (fluidCanvasRef.current) {
+      fluidCleanup = fluidSimulation(fluidCanvasRef.current, frozen);
     }
 
-    // ── 5. Rotating Earth (high & medium tiers) ─────────────────────
+    // ── 5. Rotating Earth (freeze on low/medium) ─────────────────────
     let earthCleanup: (() => void) | undefined;
-    if (perfTier !== "low" && earthCanvasRef.current && earthPanelRef.current) {
-      earthCleanup = initRotatingEarth(earthPanelRef.current, earthCanvasRef.current);
+    if (earthCanvasRef.current && earthPanelRef.current) {
+      earthCleanup = initRotatingEarth(earthPanelRef.current, earthCanvasRef.current, frozen);
     }
 
     return () => {
@@ -141,30 +145,17 @@ export function LandingPage() {
       fluidCleanup?.();
       earthCleanup?.();
     };
-  }, [router, perfTier]);
+  }, [router, perfTier, frozen]);
 
   return (
     <>
     <div className="landing-page-body">
       <section className="hero">
-        {/* ParticleWave: only on high tier */}
-        {perfTier === "high" && <ParticleWave />}
+        {/* ParticleWave: always rendered, frozen on low/medium */}
+        <ParticleWave frozen={frozen} />
 
-        {/* Fluid canvas: only on high tier */}
-        {perfTier === "high" && (
-          <canvas ref={fluidCanvasRef} className="fluid-canvas" aria-hidden="true" />
-        )}
-
-        {/* Static gradient fallback for medium/low tiers */}
-        {perfTier !== "high" && (
-          <div
-            className="absolute inset-0 z-0"
-            style={{
-              background: "radial-gradient(ellipse at 30% 50%, rgba(82,228,184,0.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 30%, rgba(100,140,255,0.06) 0%, transparent 50%), #04050c",
-            }}
-            aria-hidden="true"
-          />
-        )}
+        {/* Fluid canvas: always rendered, frozen on low/medium */}
+        <canvas ref={fluidCanvasRef} className="fluid-canvas" aria-hidden="true" />
 
         <div className="scrim" aria-hidden="true" />
 
@@ -198,12 +189,10 @@ export function LandingPage() {
           <span ref={navCtaMountRef} id="navCtaMount" className="liquid-btn-mount" />
         </header>
 
-        {/* Earth globe: high & medium tiers only */}
-        {perfTier !== "low" && (
-          <div className="earth-panel" id="earthPanel" ref={earthPanelRef}>
-            <canvas ref={earthCanvasRef} id="earthCanvas" />
-          </div>
-        )}
+        {/* Earth globe: always rendered, frozen on low/medium */}
+        <div className="earth-panel" id="earthPanel" ref={earthPanelRef}>
+          <canvas ref={earthCanvasRef} id="earthCanvas" />
+        </div>
 
         <div className="center-col">
           <p className="badge" id="badge">
@@ -237,22 +226,12 @@ export function LandingPage() {
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-neutral-400 text-xs font-mono animate-bounce opacity-75 pointer-events-none">
-          <span>Scroll to explore 3D topology</span>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </div>
       </section>
 
-      {/* ── Lower Fullscreen Section: Spline 3D + KineticGrid (high & medium only) ── */}
-      {perfTier !== "low" ? (
-        <SplineSceneBasic />
-      ) : (
-        <footer className="w-full py-8 border-t border-white/10 text-center text-xs text-neutral-500 font-mono bg-[#04050c]">
-          © 2026 Voltrex Trading System — engineered for quantitative equities analysis.
-        </footer>
-      )}
+      {/* Footer */}
+      <footer className="w-full py-8 border-t border-white/10 text-center text-xs text-neutral-500 font-mono bg-[#04050c]">
+        © 2026 Voltrex Trading System — engineered for quantitative equities analysis.
+      </footer>
     </div>
 
       {/* ── Mercury Login Overlay ── */}
@@ -276,10 +255,14 @@ export function LandingPage() {
           subtitle="Institutional Trading Terminal · 2026"
           onDismiss={() => {
             setBadgeUser(null);
-            router.push("/terminal");
+            setShowPlans(true);
           }}
+          dismissLabel="SEE PLANS →"
         />
       )}
+
+      {/* ── Plans & Pricing Modal ── */}
+      <PlansModal isOpen={showPlans} onClose={() => setShowPlans(false)} />
     </>
   );
 }
@@ -307,7 +290,8 @@ function mountLiquidMetalButton(
     label,
     type = "button",
     onClick,
-  }: { label: string; type?: "button" | "submit"; onClick?: (e: Event) => void }
+    frozen = false,
+  }: { label: string; type?: "button" | "submit"; onClick?: (e: Event) => void; frozen?: boolean }
 ) {
   if (!mountEl) return;
   mountEl.innerHTML = "";
@@ -520,9 +504,15 @@ function mountLiquidMetalButton(
       glCtx.uniform1f(uTime, elapsed);
       glCtx.uniform1f(uSpeed, speedUniform);
       glCtx.drawArrays(glCtx.TRIANGLES, 0, 6);
+      if (!frozen) {
+        animId = requestAnimationFrame(renderShader);
+      }
+    }
+    if (frozen) {
+      renderShader(performance.now());
+    } else {
       animId = requestAnimationFrame(renderShader);
     }
-    animId = requestAnimationFrame(renderShader);
   }
 
   // Interactive button element
@@ -624,7 +614,7 @@ function mountLiquidMetalButton(
 }
 
 // ── Rotating Earth (verbatim per spec) ───────────────────────────────────────
-function initRotatingEarth(panel: HTMLElement, earthCanvas: HTMLCanvasElement) {
+function initRotatingEarth(panel: HTMLElement, earthCanvas: HTMLCanvasElement, frozen = false) {
   if (!panel || !earthCanvas || typeof d3 === "undefined") return;
 
   const context = earthCanvas.getContext("2d");
@@ -788,6 +778,12 @@ function initRotatingEarth(panel: HTMLElement, earthCanvas: HTMLCanvasElement) {
   const rotationSpeed = 0.1;
 
   const timer = d3.timer(() => {
+    if (frozen) {
+      // Render one frame then stop the timer
+      render();
+      timer.stop();
+      return;
+    }
     if (autoRotate) {
       rotation[0] += rotationSpeed;
       projection.rotate(rotation);
@@ -863,7 +859,7 @@ function initRotatingEarth(panel: HTMLElement, earthCanvas: HTMLCanvasElement) {
 }
 
 // ── Fluid simulation engine (verbatim per spec) ──────────────────────────────
-function fluidSimulation(canvas: HTMLCanvasElement) {
+function fluidSimulation(canvas: HTMLCanvasElement, frozen = false) {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
 
@@ -1691,7 +1687,9 @@ function fluidSimulation(canvas: HTMLCanvasElement) {
     input();
     if (!config.PAUSED) step(0.016);
     render(null);
-    rafHandle = requestAnimationFrame(update);
+    if (!frozen) {
+      rafHandle = requestAnimationFrame(update);
+    }
   }
 
   update();
@@ -1961,75 +1959,77 @@ function fluidSimulation(canvas: HTMLCanvasElement) {
     teardown.push(() => target.removeEventListener(type, handler, opts));
   }
 
-  on(window, "mousemove", (e: MouseEvent) => {
-    const { x, y } = pointerPos(e.clientX, e.clientY);
-    const p = pointers[0];
-    if (!p.everMoved) {
-      p.everMoved = true;
+  if (!frozen) {
+    on(window, "mousemove", (e: MouseEvent) => {
+      const { x, y } = pointerPos(e.clientX, e.clientY);
+      const p = pointers[0];
+      if (!p.everMoved) {
+        p.everMoved = true;
+        p.x = x;
+        p.y = y;
+        p.down = true;
+        return;
+      }
+      p.down = true;
+      p.moved = true;
+      p.dx = (x - p.x) * 5.0;
+      p.dy = (y - p.y) * 5.0;
       p.x = x;
       p.y = y;
-      p.down = true;
-      return;
-    }
-    p.down = true;
-    p.moved = true;
-    p.dx = (x - p.x) * 5.0;
-    p.dy = (y - p.y) * 5.0;
-    p.x = x;
-    p.y = y;
-    p.color = generateColor();
-  });
+      p.color = generateColor();
+    });
 
-  on(
-    window,
-    "touchmove",
-    (e: TouchEvent) => {
-      const touches = e.targetTouches;
-      for (let i = 0; i < touches.length; i++) {
-        if (i >= pointers.length) pointers.push(new (pointerPrototype as any)());
-        const p = pointers[i];
-        const { x, y } = pointerPos(touches[i].clientX, touches[i].clientY);
-        p.down = true;
-        p.moved = p.everMoved === true;
-        p.everMoved = true;
-        p.dx = (x - p.x) * 8.0;
-        p.dy = (y - p.y) * 8.0;
-        p.x = x;
-        p.y = y;
-      }
-    },
-    { passive: true }
-  );
+    on(
+      window,
+      "touchmove",
+      (e: TouchEvent) => {
+        const touches = e.targetTouches;
+        for (let i = 0; i < touches.length; i++) {
+          if (i >= pointers.length) pointers.push(new (pointerPrototype as any)());
+          const p = pointers[i];
+          const { x, y } = pointerPos(touches[i].clientX, touches[i].clientY);
+          p.down = true;
+          p.moved = p.everMoved === true;
+          p.everMoved = true;
+          p.dx = (x - p.x) * 8.0;
+          p.dy = (y - p.y) * 8.0;
+          p.x = x;
+          p.y = y;
+        }
+      },
+      { passive: true }
+    );
 
-  on(
-    window,
-    "touchstart",
-    (e: TouchEvent) => {
-      const touches = e.targetTouches;
-      for (let i = 0; i < touches.length; i++) {
-        if (i >= pointers.length) pointers.push(new (pointerPrototype as any)());
-        const p = pointers[i];
-        const { x, y } = pointerPos(touches[i].clientX, touches[i].clientY);
-        p.id = touches[i].identifier;
-        p.down = true;
-        p.x = x;
-        p.y = y;
-        p.color = generateColor();
-      }
-    },
-    { passive: true }
-  );
+    on(
+      window,
+      "touchstart",
+      (e: TouchEvent) => {
+        const touches = e.targetTouches;
+        for (let i = 0; i < touches.length; i++) {
+          if (i >= pointers.length) pointers.push(new (pointerPrototype as any)());
+          const p = pointers[i];
+          const { x, y } = pointerPos(touches[i].clientX, touches[i].clientY);
+          p.id = touches[i].identifier;
+          p.down = true;
+          p.x = x;
+          p.y = y;
+          p.color = generateColor();
+        }
+      },
+      { passive: true }
+    );
 
-  on(window, "mouseup", () => {
-    pointers[0].down = false;
-  });
+    on(window, "mouseup", () => {
+      pointers[0].down = false;
+    });
 
-  on(window, "touchend", (e: TouchEvent) => {
-    const touches = e.changedTouches;
-    for (let i = 0; i < touches.length; i++)
-      for (let j = 0; j < pointers.length; j++)
-        if (touches[i].identifier === pointers[j].id) pointers[j].down = false;
-  });
+    on(window, "touchend", (e: TouchEvent) => {
+      const touches = e.changedTouches;
+      for (let i = 0; i < touches.length; i++)
+        for (let j = 0; j < pointers.length; j++)
+          if (touches[i].identifier === pointers[j].id) pointers[j].down = false;
+    });
+  }
 
   return function destroy() {
     destroyed = true;

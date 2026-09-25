@@ -152,7 +152,7 @@ export function PlansModal({ isOpen, onClose }: PlansModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto backdrop-blur-2xl bg-black/85 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto backdrop-blur-md bg-black/60 animate-in fade-in duration-300">
       {/* Subtle dotted grid */}
       <div
         aria-hidden="true"
@@ -176,20 +176,18 @@ export function PlansModal({ isOpen, onClose }: PlansModalProps) {
         )}
       />
 
-      {/* Top action bar: Quick Enter Terminal + Close button */}
+      {/* Top action bar: Quick Launch Terminal + Close button */}
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-2.5">
-        {viewState === "receipt" && (
-          <Button
-            onClick={() => {
-              onClose();
-              router.push("/terminal");
-            }}
-            className="flex items-center gap-1.5 text-xs py-1.5 px-3.5 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium shadow-md shadow-orange-500/20 hover:from-orange-400 hover:to-orange-500 cursor-pointer"
-          >
-            <span>Enter Terminal</span>
-            <ArrowRight className="w-3 h-3" />
-          </Button>
-        )}
+        <Button
+          onClick={() => {
+            onClose();
+            router.push("/terminal");
+          }}
+          className="flex items-center gap-1.5 text-xs py-1.5 px-3.5 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium shadow-md shadow-orange-500/20 hover:from-orange-400 hover:to-orange-500 cursor-pointer"
+        >
+          <span>Launch Terminal</span>
+          <ArrowRight className="w-3 h-3" />
+        </Button>
         <button
           onClick={onClose}
           aria-label="Close modal"
@@ -232,7 +230,7 @@ export function PlansModal({ isOpen, onClose }: PlansModalProps) {
                   </div>
                 )}
 
-                <PricingCard.Card className="w-full flex flex-col justify-between h-full bg-[#0d131b]/95 border-white/15 hover:border-white/30 transition-all">
+                <PricingCard.Card className="w-full flex flex-col justify-between h-full bg-[#0d131b]/85 backdrop-blur-md border-white/15 hover:border-white/30 transition-all">
                   <PricingCard.Header>
                     <PricingCard.Plan>
                       <PricingCard.PlanName>
@@ -306,8 +304,22 @@ export function PlansModal({ isOpen, onClose }: PlansModalProps) {
             ))}
           </div>
 
+          {/* Launch Terminal CTA */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button
+              onClick={() => {
+                onClose();
+                router.push("/terminal");
+              }}
+              className="flex items-center gap-2 text-sm py-3 px-8 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-semibold shadow-lg shadow-orange-500/30 cursor-pointer hover:scale-105 active:scale-95 transition-all"
+            >
+              <span>Launch Terminal</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+
           {/* Money Back Guarantee Banner */}
-          <div className="mt-10 text-center text-xs text-[#8e94a8] font-mono flex items-center gap-2">
+          <div className="mt-6 text-center text-xs text-[#8e94a8] font-mono flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             14-Day Institutional Money Back Guarantee &middot; Instant API Provisioning &middot; Zero Hardware Locks
           </div>
@@ -374,7 +386,7 @@ export function PlansModal({ isOpen, onClose }: PlansModalProps) {
               }}
               className="flex items-center gap-1.5 text-xs py-2 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold shadow-lg shadow-orange-500/25 hover:from-orange-400 hover:to-orange-500 cursor-pointer"
             >
-              <span>Enter Terminal</span>
+              <span>Launch Terminal</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>

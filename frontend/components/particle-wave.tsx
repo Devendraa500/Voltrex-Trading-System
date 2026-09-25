@@ -5,9 +5,10 @@ import * as THREE from "three";
 
 interface ParticleWaveProps {
   className?: string;
+  frozen?: boolean;
 }
 
-const ParticleWave: React.FC<ParticleWaveProps> = ({ className = "" }) => {
+const ParticleWave: React.FC<ParticleWaveProps> = ({ className = "", frozen = false }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<{
     scene: THREE.Scene;
@@ -173,13 +174,25 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = "" }) => {
 
   useEffect(() => {
     initScene();
-    animate();
+
+    if (frozen) {
+      // Render a single static frame
+      if (sceneRef.current) {
+        const { scene, camera, renderer } = sceneRef.current;
+        camera.lookAt(scene.position);
+        renderer.render(scene, camera);
+      }
+    } else {
+      animate();
+    }
 
     const handleResizeEvent = () => handleResize();
     const handleMouseMoveEvent = (e: MouseEvent) => handleMouseMove(e);
 
     window.addEventListener("resize", handleResizeEvent);
-    window.addEventListener("mousemove", handleMouseMoveEvent);
+    if (!frozen) {
+      window.addEventListener("mousemove", handleMouseMoveEvent);
+    }
 
     return () => {
       if (sceneRef.current?.animationId) {
@@ -203,7 +216,7 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = "" }) => {
         renderer.dispose();
       }
     };
-  }, []);
+  }, [frozen]);
 
   return (
     <canvas
