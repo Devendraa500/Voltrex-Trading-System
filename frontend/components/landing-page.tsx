@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Lenis from "lenis";
 import * as d3 from "d3";
 import { ParticleWave } from "@/components/particle-wave";
 import { SplineSceneBasic } from "@/components/spline-scene-basic";
 import { usePerfTier } from "@/hooks/use-perf-tier";
+import MercuryLogin from "@/components/mercury-login";
+import LanyardBadge from "@/components/ui/lanyard-badge";
 
 export function LandingPage() {
   const router = useRouter();
   const perfTier = usePerfTier();
+  const [showLogin, setShowLogin] = useState(false);
+  const [badgeUser, setBadgeUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const fluidCanvasRef = useRef<HTMLCanvasElement>(null);
   const earthCanvasRef = useRef<HTMLCanvasElement>(null);
   const earthPanelRef = useRef<HTMLDivElement>(null);
@@ -98,10 +102,10 @@ export function LandingPage() {
 
     if (navCtaMountRef.current) {
       navCleanup = mountLiquidMetalButton(navCtaMountRef.current, {
-        label: "Launch Terminal",
+        label: "Login / Signup",
         type: "button",
         onClick: () => {
-          router.push("/terminal");
+          setShowLogin(true);
         },
       })?.destroy;
     }
@@ -140,6 +144,7 @@ export function LandingPage() {
   }, [router, perfTier]);
 
   return (
+    <>
     <div className="landing-page-body">
       <section className="hero">
         {/* ParticleWave: only on high tier */}
@@ -249,6 +254,33 @@ export function LandingPage() {
         </footer>
       )}
     </div>
+
+      {/* ── Mercury Login Overlay ── */}
+      {showLogin && (
+        <MercuryLogin
+          onClose={() => setShowLogin(false)}
+          onSuccess={(user) => {
+            setShowLogin(false);
+            setBadgeUser(user);
+          }}
+        />
+      )}
+
+      {/* ── Lanyard Badge (ID Card) Overlay ── */}
+      {badgeUser && (
+        <LanyardBadge
+          name={badgeUser.name}
+          email={badgeUser.email}
+          role={badgeUser.role}
+          title="VOLTREX"
+          subtitle="Institutional Trading Terminal · 2026"
+          onDismiss={() => {
+            setBadgeUser(null);
+            router.push("/terminal");
+          }}
+        />
+      )}
+    </>
   );
 }
 

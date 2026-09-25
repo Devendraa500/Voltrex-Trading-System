@@ -1,18 +1,22 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { SplineScene } from "@/components/ui/splite";
 import { Spotlight } from "@/components/ui/spotlight";
 import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
 import KineticGrid from "@/components/ui/kinetic-grid";
 import { Activity, ShieldCheck, Zap } from "lucide-react";
+import { PlansModal } from "@/components/plans-modal";
 
 export function SplineSceneBasic() {
+  const [showPlans, setShowPlans] = useState(false);
+
   return (
-    <KineticGrid
-      globalColor="monochrome"
-      className="w-full min-h-screen flex flex-col justify-between pt-12 lg:pt-20 text-[#eef0f6] z-10"
-    >
+    <>
+      <KineticGrid
+        globalColor="monochrome"
+        className="w-full min-h-screen flex flex-col justify-between pt-12 lg:pt-20 text-[#eef0f6] z-10"
+      >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-16 relative my-auto">
         <Spotlight
           className="-top-40 left-0 md:left-60 md:-top-20"
@@ -58,11 +62,11 @@ export function SplineSceneBasic() {
               </div>
             </div>
 
-            {/* Launch CTA with Liquid Metal Shader button */}
+            {/* Plans CTA with Liquid Metal Shader button */}
             <div className="mt-8 flex flex-wrap items-center gap-5">
               <LiquidMetalButton
-                label="Launch Voltrex Terminal"
-                href="/terminal"
+                label="See Plans"
+                onClick={() => setShowPlans(true)}
               />
               <span className="text-xs text-[#b9becf] font-mono">
                 Real-Time NSE Equities &middot; Zero Latency
@@ -85,5 +89,9 @@ export function SplineSceneBasic() {
         © 2026 Voltrex Trading System — engineered for quantitative equities analysis.
       </footer>
     </KineticGrid>
+
+    {/* Plans & Pricing Modal with Interactive Receipt Generator */}
+    <PlansModal isOpen={showPlans} onClose={() => setShowPlans(false)} />
+  </>
   );
 }
