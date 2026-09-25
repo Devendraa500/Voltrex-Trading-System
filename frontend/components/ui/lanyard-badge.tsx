@@ -17,6 +17,7 @@ interface LanyardBadgeProps {
   height?: string;
   className?: string;
   strapColor?: string;
+  strapBorderColor?: string;
   inkColor?: string;
   cardColor?: string;
   onDismiss?: () => void;
@@ -66,7 +67,8 @@ export default function LanyardBadge({
   cardWidth = 240,
   height = "100svh",
   className = "",
-  strapColor = "#141312",
+  strapColor = "#12141a",
+  strapBorderColor = "#d4af37",
   inkColor = "#b59a6c",
   cardColor = "#0a0a0a",
   onDismiss,
@@ -174,14 +176,123 @@ export default function LanyardBadge({
         const ny = -dx / len;
         const hw = (sw * dpr) / 2;
 
+        const midAx = a.x * dpr;
+        const midAy = a.y * dpr;
+        const midBx = b.x * dpr;
+        const midBy = b.y * dpr;
+
+        // 1. Base Ribbon polygon
         ctx.beginPath();
-        ctx.moveTo(a.x * dpr + nx * hw, a.y * dpr + ny * hw);
-        ctx.lineTo(b.x * dpr + nx * hw, b.y * dpr + ny * hw);
-        ctx.lineTo(b.x * dpr - nx * hw, b.y * dpr - ny * hw);
-        ctx.lineTo(a.x * dpr - nx * hw, a.y * dpr - ny * hw);
+        ctx.moveTo(midAx + nx * hw, midAy + ny * hw);
+        ctx.lineTo(midBx + nx * hw, midBy + ny * hw);
+        ctx.lineTo(midBx - nx * hw, midBy - ny * hw);
+        ctx.lineTo(midAx - nx * hw, midAy - ny * hw);
         ctx.closePath();
         ctx.fillStyle = color;
         ctx.fill();
+
+        ctx.save();
+        ctx.clip(); // Constrain details to the ribbon segment
+
+        // 2. 3D Cylindrical lighting depth
+        const pL = { x: midAx + nx * hw, y: midAy + ny * hw };
+        const pR = { x: midAx - nx * hw, y: midAy - ny * hw };
+        const grad = ctx.createLinearGradient(pL.x, pL.y, pR.x, pR.y);
+        grad.addColorStop(0, "rgba(0, 0, 0, 0.55)");
+        grad.addColorStop(0.2, "rgba(255, 255, 255, 0.05)");
+        grad.addColorStop(0.5, "rgba(255, 255, 255, 0.15)");
+        grad.addColorStop(0.8, "rgba(255, 255, 255, 0.05)");
+        grad.addColorStop(1, "rgba(0, 0, 0, 0.55)");
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // 3. Diagonal technical ripstop / weave micro-lines
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+        ctx.lineWidth = 1 * dpr;
+        const numWeaves = Math.floor(len / (4.5 * dpr));
+        for (let w = -2; w <= numWeaves + 2; w++) {
+          const frac = w / (numWeaves || 1);
+          const cx = midAx + (midBx - midAx) * frac;
+          const cy = midAy + (midBy - midAy) * frac;
+          ctx.beginPath();
+          ctx.moveTo(cx + nx * hw, cy + ny * hw);
+          ctx.lineTo(cx - nx * hw + (midBx - midAx) * 0.18, cy - ny * hw + (midBy - midAy) * 0.18);
+          ctx.stroke();
+        }
+
+        // 4. Center High-Tech Tracer Stripe (Dual Racing Stripe)
+        const stripeHw = hw * 0.22;
+        ctx.beginPath();
+        ctx.moveTo(midAx + nx * stripeHw, midAy + ny * stripeHw);
+        ctx.lineTo(midBx + nx * stripeHw, midBy + ny * stripeHw);
+        ctx.lineTo(midBx - nx * stripeHw, midBy - ny * stripeHw);
+        ctx.lineTo(midAx - nx * stripeHw, midAy - ny * stripeHw);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(212, 175, 55, 0.22)"; // Metallic gold accent zone
+        ctx.fill();
+
+        // Glowing center core micro-line
+        ctx.strokeStyle = "rgba(245, 185, 80, 0.75)";
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(midAx, midAy);
+        ctx.lineTo(midBx, midBy);
+        ctx.stroke();
+
+        // 5. Printed Tech Typography ("VOLTREX // QUANT")
+        if (len > 35 * dpr && i % 2 === 0) {
+          ctx.save();
+          const angle = Math.atan2(dy, dx);
+          ctx.translate((midAx + midBx) / 2, (midAy + midBy) / 2);
+          ctx.rotate(angle);
+          ctx.fillStyle = "rgba(238, 240, 246, 0.75)";
+          ctx.font = `bold ${Math.max(6, Math.round(hw * 0.46))}px "Space Mono", monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.letterSpacing = "0.15em";
+          ctx.fillText("VOLTREX // QUANT", 0, 0);
+          ctx.restore();
+        }
+
+        ctx.restore(); // remove clip
+
+        // 6. Refined Inner Stitching Seams
+        const stitchHw = hw * 0.76;
+        ctx.save();
+        ctx.setLineDash([3 * dpr, 3 * dpr]);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.lineWidth = 1 * dpr;
+        // Left stitch
+        ctx.beginPath();
+        ctx.moveTo(midAx + nx * stitchHw, midAy + ny * stitchHw);
+        ctx.lineTo(midBx + nx * stitchHw, midBy + ny * stitchHw);
+        ctx.stroke();
+        // Right stitch
+        ctx.beginPath();
+        ctx.moveTo(midAx - nx * stitchHw, midAy - ny * stitchHw);
+        ctx.lineTo(midBx - nx * stitchHw, midBy - ny * stitchHw);
+        ctx.stroke();
+        ctx.restore();
+
+        // 7. HIGH-VISIBILITY OUTER BORDER COLOR
+        ctx.save();
+        ctx.strokeStyle = strapBorderColor;
+        ctx.lineWidth = Math.max(1.8, 2.2 * dpr);
+        ctx.lineCap = "round";
+
+        // Left border
+        ctx.beginPath();
+        ctx.moveTo(midAx + nx * hw, midAy + ny * hw);
+        ctx.lineTo(midBx + nx * hw, midBy + ny * hw);
+        ctx.stroke();
+
+        // Right border
+        ctx.beginPath();
+        ctx.moveTo(midAx - nx * hw, midAy - ny * hw);
+        ctx.lineTo(midBx - nx * hw, midBy - ny * hw);
+        ctx.stroke();
+
+        ctx.restore();
       }
     };
 
@@ -192,31 +303,55 @@ export default function LanyardBadge({
       ribbon(right, strapColor, strandRest);
       ribbon(low, strapColor, strandRest);
 
-      // Buckle
+      // Modern Titanium & Gold Hardware Buckle
       const B = pts[iB];
       ctx.setTransform(dpr, 0, 0, dpr, B.x * dpr, B.y * dpr);
       const u = sw / 20;
-      ctx.shadowColor = "rgba(0,0,0,0.3)";
-      ctx.shadowBlur = 6 * dpr;
-      const g = ctx.createLinearGradient(-16 * u, 0, 16 * u, 0);
-      g.addColorStop(0, "#f4efe4");
-      g.addColorStop(0.45, "#b9b0a0");
-      g.addColorStop(0.55, "#8f8778");
-      g.addColorStop(1, "#ece6da");
-      ctx.fillStyle = g;
+      ctx.shadowColor = "rgba(0,0,0,0.55)";
+      ctx.shadowBlur = 8 * dpr;
+
+      // Outer buckle frame
+      const frameGrad = ctx.createLinearGradient(-16 * u, -15 * u, 16 * u, 15 * u);
+      frameGrad.addColorStop(0, "#2c303c");
+      frameGrad.addColorStop(0.5, "#141720");
+      frameGrad.addColorStop(1, "#262934");
+      ctx.fillStyle = frameGrad;
+      ctx.strokeStyle = strapBorderColor;
+      ctx.lineWidth = 1.4 * dpr;
+
       ctx.beginPath();
-      ctx.roundRect(-15 * u, -14 * u, 30 * u, 17 * u, 3 * u);
+      ctx.roundRect(-15 * u, -14 * u, 30 * u, 17 * u, 4 * u);
       ctx.fill();
+      ctx.stroke();
+
+      // Lower clasp loop
       ctx.beginPath();
       ctx.roundRect(-11 * u, 1 * u, 22 * u, 15 * u, [2 * u, 2 * u, 6 * u, 6 * u]);
       ctx.fill();
+      ctx.stroke();
+
+      // Gold center quick-release tab
+      const accentGrad = ctx.createLinearGradient(-6 * u, -8 * u, 6 * u, -4 * u);
+      accentGrad.addColorStop(0, "#f3e5ab");
+      accentGrad.addColorStop(0.5, "#d4af37");
+      accentGrad.addColorStop(1, "#8a6909");
+      ctx.fillStyle = accentGrad;
+      ctx.beginPath();
+      ctx.roundRect(-6 * u, -9 * u, 12 * u, 6 * u, 2 * u);
+      ctx.fill();
+
       ctx.shadowColor = "transparent";
 
-      // Ring
+      // Ring (Metallic Ring with Gold Sheen)
       const T = pts[iT];
       ctx.setTransform(dpr, 0, 0, dpr, T.x * dpr, (T.y + ringR * 0.8) * dpr);
       ctx.lineWidth = Math.max(2.5, ringR * 0.38);
-      ctx.strokeStyle = g;
+      const ringGrad = ctx.createLinearGradient(-ringR, -ringR, ringR, ringR);
+      ringGrad.addColorStop(0, "#f3e5ab");
+      ringGrad.addColorStop(0.4, "#d4af37");
+      ringGrad.addColorStop(0.7, "#5a451e");
+      ringGrad.addColorStop(1, "#f3e5ab");
+      ctx.strokeStyle = ringGrad;
       ctx.beginPath();
       ctx.arc(0, 0, ringR, 0, Math.PI * 2);
       ctx.stroke();
@@ -325,7 +460,7 @@ export default function LanyardBadge({
       card.removeEventListener("pointerup", onUp);
       card.removeEventListener("pointercancel", onUp);
     };
-  }, [cw, ch, ringR, clipH, strapColor]);
+  }, [cw, ch, ringR, clipH, strapColor, strapBorderColor]);
 
   const face: React.CSSProperties = {
     position: "absolute",
@@ -398,22 +533,37 @@ export default function LanyardBadge({
         className="absolute left-0 top-0 outline-none"
         style={{ width: cw, height: ch + ringR + clipH, transformOrigin: "50% 0", cursor: "grab", touchAction: "none", willChange: "transform" }}
       >
-        {/* Badge clip */}
+        {/* Badge clip - Titanium & Gold Hardware */}
         <div
           aria-hidden="true"
           style={{
             position: "absolute",
             left: "50%",
             top: 0,
-            width: cw * 0.075,
+            width: cw * 0.08,
             height: clipH + cw * 0.05,
             transform: "translateX(-50%)",
-            borderRadius: cw * 0.02,
-            background: "linear-gradient(90deg, #f4efe4, #a8a090 50%, #ece6da)",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.35)",
+            borderRadius: cw * 0.015,
+            background: "linear-gradient(135deg, #2a2e39 0%, #15181f 50%, #353a47 100%)",
+            border: `1px solid ${strapBorderColor}`,
+            boxShadow: "0 2px 6px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.2)",
             zIndex: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
-        />
+        >
+          {/* Rivet / Bolt detail */}
+          <div
+            style={{
+              width: 5 * s,
+              height: 5 * s,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, #f3e5ab 30%, #8a6909 100%)",
+              boxShadow: "inset 0 1px 1px rgba(0,0,0,0.5)",
+            }}
+          />
+        </div>
 
         <div
           ref={innerRef}
